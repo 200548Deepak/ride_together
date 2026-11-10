@@ -83,15 +83,45 @@ declare global {
 const DATA_DIR = path.join(process.cwd(), 'data');
 const RIDES_FILE = path.join(DATA_DIR, 'rides.json');
 
+function normalizeRides(rides: PublishedRide[]): void {
+  for (const r of rides) {
+    if (r.driver?.email) {
+      const clean = r.driver.email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const detId = `usr_${clean}`;
+      if (!r.driver_id || r.driver_id.startsWith('usr_17') || r.driver_id === 'driver_local_demo') {
+        r.driver_id = detId;
+      }
+      if (!r.driver.id || r.driver.id.startsWith('usr_17') || r.driver.id === 'driver_local_demo') {
+        r.driver.id = detId;
+      }
+    }
+    for (const b of r.bookings || []) {
+      if (b.passenger?.email) {
+        const clean = b.passenger.email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const detId = `usr_${clean}`;
+        if (!b.passenger_id || b.passenger_id.startsWith('usr_17') || b.passenger_id === 'usr_demo_passenger') {
+          b.passenger_id = detId;
+        }
+        if (!b.passenger.id || b.passenger.id.startsWith('usr_17')) {
+          b.passenger.id = detId;
+        }
+      }
+    }
+  }
+}
+
 function loadRidesFromDisk(): PublishedRide[] | null {
   try {
     if (fs.existsSync(RIDES_FILE)) {
       const content = fs.readFileSync(RIDES_FILE, 'utf-8');
       const data = JSON.parse(content);
       if (Array.isArray(data) && data.length > 0) {
+        normalizeRides(data);
         const idSet = new Set(data.map((r: any) => r.id));
         const missingSeeds = INITIAL_SEED_RIDES.filter(s => !idSet.has(s.id));
-        return [...data, ...missingSeeds];
+        const merged = [...data, ...missingSeeds];
+        normalizeRides(merged);
+        return merged;
       }
     }
   } catch (err) {
@@ -288,34 +318,38 @@ export function getSharedRideById(id: string): PublishedRide | undefined {
 }
 
 /**
- * Get rides created by a specific driver ID or email
+ * Get rides created by a specific driver ID or email.
+ * Strictly isolates results so that only rides authored by this driver are returned.
  */
 export function getSharedRidesByDriver(driverId: string, driverEmail?: string): PublishedRide[] {
   const store = getAllSharedRides();
   const normalizedEmail = driverEmail?.trim().toLowerCase();
   const normalizedId = driverId?.trim().toLowerCase();
 
+  // If neither identifier is provided, return empty
+  if (!normalizedId && !normalizedEmail) {
+    return [];
+  }
+
+  const derivedId = normalizedEmail ? `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}` : undefined;
+
   return store.filter(r => {
-    // 1. Direct match on driver_id
-    if (r.driver_id && r.driver_id === driverId) return true;
+    const rDriverEmail = r.driver?.email?.trim().toLowerCase();
+    const rDriverId = r.driver_id?.trim().toLowerCase();
+    const rDriverNestedId = r.driver?.id?.trim().toLowerCase();
 
-    // 2. Case-insensitive match on driver_id
-    if (r.driver_id && r.driver_id.toLowerCase() === normalizedId) return true;
-
-    // 3. Match on driver's registered email
-    if (normalizedEmail && r.driver?.email && r.driver.email.trim().toLowerCase() === normalizedEmail) {
+    // 1. Strict match on driver's registered email
+    if (normalizedEmail && rDriverEmail && rDriverEmail === normalizedEmail) {
       return true;
     }
 
-    // 4. Match if driver_id was generated from email (e.g. usr_driver_abc_com)
-    if (normalizedEmail) {
-      const derivedId = `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`;
-      if (r.driver_id === derivedId) return true;
-      if (r.driver_id.toLowerCase().includes(normalizedEmail.split('@')[0])) return true;
+    // 2. Strict match on deterministic ID derived from email
+    if (derivedId && (rDriverId === derivedId || rDriverNestedId === derivedId)) {
+      return true;
     }
 
-    // 5. Match if driverId contains part of the email
-    if (normalizedEmail && normalizedId && normalizedId.includes(normalizedEmail.split('@')[0])) {
+    // 3. Strict match on driver_id
+    if (normalizedId && (rDriverId === normalizedId || rDriverNestedId === normalizedId)) {
       return true;
     }
 
@@ -324,7 +358,8 @@ export function getSharedRidesByDriver(driverId: string, driverEmail?: string): 
 }
 
 /**
- * Get all passenger bookings for a specific rider/passenger
+ * Get all passenger bookings for a specific rider/passenger.
+ * Strictly isolates bookings so that only the requesting passenger's reservations are returned.
  */
 export function getSharedBookingsByPassenger(passengerId: string, passengerEmail?: string) {
   const store = getAllSharedRides();
@@ -336,26 +371,25 @@ export function getSharedBookingsByPassenger(passengerId: string, passengerEmail
   const normalizedEmail = passengerEmail?.trim().toLowerCase();
   const normalizedId = passengerId?.trim().toLowerCase();
 
+  if (!normalizedId && !normalizedEmail) {
+    return [];
+  }
+
+  const derivedId = normalizedEmail ? `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}` : undefined;
+
   for (const ride of store) {
-    for (const b of ride.bookings) {
+    for (const b of ride.bookings || []) {
+      const bPassengerEmail = b.passenger?.email?.trim().toLowerCase();
+      const bPassengerId = b.passenger_id?.trim().toLowerCase();
+      const bPassengerNestedId = b.passenger?.id?.trim().toLowerCase();
+
       let isMatch = false;
-
-      // 1. Direct match on passenger_id
-      if (b.passenger_id === passengerId) isMatch = true;
-
-      // 2. Case-insensitive match on passenger_id
-      if (b.passenger_id && b.passenger_id.toLowerCase() === normalizedId) isMatch = true;
-
-      // 3. Match on registered passenger email
-      if (normalizedEmail && b.passenger?.email && b.passenger.email.trim().toLowerCase() === normalizedEmail) {
+      if (normalizedEmail && bPassengerEmail && bPassengerEmail === normalizedEmail) {
         isMatch = true;
-      }
-
-      // 4. Match if passenger_id was generated from email (e.g. usr_rider_abc_com)
-      if (normalizedEmail) {
-        const derivedId = `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`;
-        if (b.passenger_id === derivedId) isMatch = true;
-        if (b.passenger_id.toLowerCase().includes(normalizedEmail.split('@')[0])) isMatch = true;
+      } else if (derivedId && (bPassengerId === derivedId || bPassengerNestedId === derivedId)) {
+        isMatch = true;
+      } else if (normalizedId && (bPassengerId === normalizedId || bPassengerNestedId === normalizedId)) {
+        isMatch = true;
       }
 
       if (isMatch) {

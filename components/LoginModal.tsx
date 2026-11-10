@@ -59,11 +59,14 @@ export default function LoginModal({
 
     const createSimulatedUser = (): AppUser => {
       const registered = getRegisteredUser(email);
-      if (registered) return registered;
+      if (registered) {
+        registered.id = generateDeterministicUserId(registered.email || email);
+        return registered;
+      }
 
       return {
         id: generateDeterministicUserId(email),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         name: email.split('@')[0],
         user_metadata: {
           name: email.split('@')[0],

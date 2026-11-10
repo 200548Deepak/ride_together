@@ -149,7 +149,7 @@ export default function RegisterFlow({
 
     const createSimulatedUser = (): AppUser => ({
       id: generateDeterministicUserId(email),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       name: fullName,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
@@ -296,10 +296,10 @@ export default function RegisterFlow({
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${i + 1 === step
-                    ? 'w-6 bg-[#00aff5]'
-                    : i + 1 < step
-                      ? 'w-2 bg-[#00aff5]/60'
-                      : 'w-2 bg-slate-200'
+                  ? 'w-6 bg-[#00aff5]'
+                  : i + 1 < step
+                    ? 'w-2 bg-[#00aff5]/60'
+                    : 'w-2 bg-slate-200'
                   }`}
               />
             ))}
@@ -522,8 +522,8 @@ export default function RegisterFlow({
                   <label
                     key={opt.value}
                     className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${gender === opt.value
-                        ? 'border-[#00aff5] bg-[#00aff5]/5'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      ? 'border-[#00aff5] bg-[#00aff5]/5'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                   >
                     <span className="font-semibold text-sm text-[#054752]">
@@ -539,8 +539,8 @@ export default function RegisterFlow({
                     />
                     <span
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${gender === opt.value
-                          ? 'border-[#00aff5] bg-[#00aff5]'
-                          : 'border-slate-300 bg-white'
+                        ? 'border-[#00aff5] bg-[#00aff5]'
+                        : 'border-slate-300 bg-white'
                         }`}
                     >
                       {gender === opt.value && (

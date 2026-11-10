@@ -44,6 +44,10 @@ export async function POST(req: NextRequest) {
 
     let driverId = body.driver_id;
 
+    if (body.driver_email) {
+      driverId = `usr_${body.driver_email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    }
+
     // 1. Authenticate driver from Authorization header if driver_id not provided
     if (!driverId && isSupabaseConfigured()) {
       const authHeader = req.headers.get('authorization');
@@ -54,10 +58,6 @@ export async function POST(req: NextRequest) {
           driverId = user.id;
         }
       }
-    }
-
-    if (!driverId && body.driver_email) {
-      driverId = `usr_${body.driver_email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
     }
 
     if (!driverId) {
@@ -255,13 +255,23 @@ export async function GET(req: NextRequest) {
     const driverEmail = searchParams.get('driver_email') || undefined;
     const all = searchParams.get('all') === 'true';
 
-    // If all=true or neither driverId nor driverEmail provided, return all shared active rides
-    if (all || (!driverId && !driverEmail)) {
+    // If all=true, return all shared active rides (for search or public directory)
+    if (all) {
       const allRides = getAllSharedRides();
       return NextResponse.json({
         success: true,
         count: allRides.length,
         rides: allRides
+      });
+    }
+
+    // Driver dashboard query: if neither driverId nor driverEmail is provided, return empty list.
+    // Drivers should only view their own rides!
+    if (!driverId && !driverEmail) {
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        rides: []
       });
     }
 

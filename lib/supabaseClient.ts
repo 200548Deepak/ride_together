@@ -49,7 +49,12 @@ export function getLocalUser(): AppUser | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(LOCAL_USER_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    if (user && user.email) {
+      user.id = generateDeterministicUserId(user.email);
+    }
+    return user;
   } catch {
     return null;
   }
@@ -59,12 +64,16 @@ export function getLocalUser(): AppUser | null {
  * Looks up an account in the local registry by email.
  */
 export function getRegisteredUser(email: string): AppUser | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || !email) return null;
   try {
     const raw = localStorage.getItem(USERS_REGISTRY_KEY);
     if (!raw) return null;
     const registry = JSON.parse(raw);
-    return registry[email.trim().toLowerCase()] || null;
+    const user = registry[email.trim().toLowerCase()] || null;
+    if (user && user.email) {
+      user.id = generateDeterministicUserId(user.email);
+    }
+    return user;
   } catch {
     return null;
   }
@@ -76,6 +85,7 @@ export function getRegisteredUser(email: string): AppUser | null {
 export function saveRegisteredUser(user: AppUser): void {
   if (typeof window === 'undefined' || !user.email) return;
   try {
+    user.id = generateDeterministicUserId(user.email);
     const raw = localStorage.getItem(USERS_REGISTRY_KEY);
     const registry = raw ? JSON.parse(raw) : {};
     registry[user.email.trim().toLowerCase()] = user;
@@ -91,6 +101,9 @@ export function saveRegisteredUser(user: AppUser): void {
 export function saveLocalUser(user: AppUser): void {
   if (typeof window === 'undefined') return;
   try {
+    if (user.email) {
+      user.id = generateDeterministicUserId(user.email);
+    }
     localStorage.setItem(LOCAL_USER_STORAGE_KEY, JSON.stringify(user));
     saveRegisteredUser(user);
     window.dispatchEvent(new CustomEvent('auth-change', { detail: user }));

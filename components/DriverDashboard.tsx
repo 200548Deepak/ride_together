@@ -12,11 +12,10 @@ interface DriverDashboardProps {
 
 export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin }) => {
   const [rides, setRides] = useState<DriverRideItem[]>([]);
-  const [allCommunityRides, setAllCommunityRides] = useState<DriverRideItem[]>([]);
   const [passengerBookings, setPassengerBookings] = useState<any[]>([]);
   
-  // Dashboard view mode: 'driver' (offered rides) | 'passenger' (my bookings) | 'all' (explore all community rides)
-  const [mode, setMode] = useState<'driver' | 'passenger' | 'all'>('driver');
+  // Dashboard view mode: 'driver' (offered rides) | 'passenger' (my bookings)
+  const [mode, setMode] = useState<'driver' | 'passenger'>('driver');
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [isLoading, setIsLoading] = useState(true);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
@@ -30,15 +29,8 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
     try {
       setIsLoading(true);
 
-      // 1. Fetch all community rides
-      const allRes = await fetch('/api/rides?all=true');
-      const allData = await allRes.json();
-      if (allRes.ok && allData.success) {
-        setAllCommunityRides(allData.rides || []);
-      }
-
       if (userId || userEmail) {
-        // 2. Fetch rides published by this user as driver
+        // 1. Fetch rides published by this user as driver ONLY
         const rideParams = new URLSearchParams();
         if (userId) rideParams.set('driver_id', userId);
         if (userEmail) rideParams.set('driver_email', userEmail);
@@ -47,9 +39,11 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         const data = await res.json();
         if (res.ok && data.success) {
           setRides(data.rides || []);
+        } else {
+          setRides([]);
         }
 
-        // 3. Fetch passenger bookings for this user
+        // 2. Fetch passenger bookings for this user ONLY
         const bookParams = new URLSearchParams();
         if (userId) bookParams.set('passenger_id', userId);
         if (userEmail) bookParams.set('passenger_email', userEmail);
@@ -58,10 +52,17 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         const bookData = await bookRes.json();
         if (bookRes.ok && bookData.success) {
           setPassengerBookings(bookData.bookings || []);
+        } else {
+          setPassengerBookings([]);
         }
+      } else {
+        setRides([]);
+        setPassengerBookings([]);
       }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
+      setRides([]);
+      setPassengerBookings([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +73,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const modeParam = urlParams.get('mode');
-      if (modeParam === 'passenger' || modeParam === 'driver' || modeParam === 'all') {
+      if (modeParam === 'passenger' || modeParam === 'driver') {
         setMode(modeParam);
       }
     }
@@ -265,7 +266,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
           </div>
         </div>
 
-        {/* Primary View Switcher: Driver Offered | Passenger Bookings | All Community Rides */}
+        {/* Primary View Switcher: Driver Offered | Passenger Bookings */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-2 pt-2 border-t border-gray-100">
           <button
             type="button"
@@ -291,19 +292,6 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
           >
             <span>🎫</span>
             <span>My Booked Rides ({passengerBookings.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMode('all')}
-            className={`pb-3.5 pt-2 px-4 font-extrabold text-sm border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-              mode === 'all'
-                ? 'border-[#00aff5] text-[#00aff5]'
-                : 'border-transparent text-[#708c91] hover:text-[#054752]'
-            }`}
-          >
-            <span>🌐</span>
-            <span>Explore All Community Rides ({allCommunityRides.length})</span>
           </button>
         </div>
       </div>
@@ -360,23 +348,17 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
                       <span>Signed in as {user.name}</span>
                     </h3>
                     <p className="text-xs text-[#708c91] mt-1 leading-relaxed">
-                      You haven&apos;t published any rides with this account yet. If you created a ride from your Driver account, switch to <strong>&quot;Explore All Community Rides&quot;</strong> or search your route to view and book it!
+                      You haven&apos;t published any rides with this account yet. Share your empty seats, split travel costs, and travel comfortably.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setMode('all')}
-                      className="px-4 py-2.5 rounded-full bg-[#00aff5] text-white text-xs font-bold hover:bg-[#008ecc] transition shadow-sm cursor-pointer"
+                      onClick={() => setIsPublishOpen(true)}
+                      className="px-5 py-2.5 rounded-full bg-[#00aff5] text-white text-xs font-bold hover:bg-[#008ecc] transition shadow-sm cursor-pointer"
                     >
-                      Browse All Offered Rides ({allCommunityRides.length})
+                      Offer a Ride
                     </button>
-                    <Link
-                      href="/search"
-                      className="px-4 py-2.5 rounded-full bg-white border border-gray-200 text-[#054752] text-xs font-bold hover:bg-slate-50 transition"
-                    >
-                      Search
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -470,13 +452,6 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
                     className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-colors shadow text-sm cursor-pointer"
                   >
                     Offer a ride now
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode('all')}
-                    className="py-3 px-6 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition-colors text-sm cursor-pointer"
-                  >
-                    Browse Community Rides
                   </button>
                 </div>
               </div>
@@ -654,18 +629,11 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
                   Browse rides published by verified drivers, reserve your seat in seconds, and travel comfortably.
                 </p>
                 <div className="flex items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMode('all')}
-                    className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-colors shadow text-sm cursor-pointer"
-                  >
-                    Browse Offered Rides ({allCommunityRides.length})
-                  </button>
                   <Link
                     href="/search"
-                    className="py-3 px-6 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition-colors text-sm"
+                    className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-colors shadow text-sm"
                   >
-                    Search Rides
+                    Find & Book Rides
                   </Link>
                 </div>
               </div>
@@ -721,105 +689,6 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
                             View Itinerary
                           </Link>
                         )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* MODE 3: ALL COMMUNITY RIDES (EXPLORE & BOOK)             */}
-        {/* ======================================================== */}
-        {mode === 'all' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-extrabold text-[#054752]">All Active Community Rides ({allCommunityRides.length})</h2>
-                <p className="text-xs text-[#708c91]">Rides published by drivers and available for any rider to book</p>
-              </div>
-
-              <Link
-                href="/search"
-                className="py-2 px-4 rounded-full font-bold text-[#00aff5] bg-cyan-50 hover:bg-cyan-100 text-xs transition flex items-center gap-1.5 self-start"
-              >
-                <span>🔍</span>
-                <span>Open Advanced Filter Search</span>
-              </Link>
-            </div>
-
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(n => (
-                  <div key={n} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse h-36" />
-                ))}
-              </div>
-            ) : allCommunityRides.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-                <p className="text-sm text-[#708c91]">No community rides currently active.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {allCommunityRides.map(ride => {
-                  const depDate = new Date(ride.departure_time);
-                  const arrDate = new Date(ride.arrival_time);
-
-                  return (
-                    <div
-                      key={ride.id}
-                      className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-50 text-[#00aff5]">
-                            {depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                          </span>
-                          <span className="text-lg font-black text-[#054752]">
-                            ₹{ride.price_amount}
-                          </span>
-                        </div>
-
-                        <div className="text-lg font-extrabold text-[#054752] flex items-center gap-2">
-                          <span>{ride.departure_city}</span>
-                          <span className="text-[#00aff5]">➔</span>
-                          <span>{ride.arrival_city}</span>
-                        </div>
-
-                        <div className="text-xs text-[#708c91] space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span>🕒</span>
-                            <span>Departs at {depDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.departure_location_name})</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span>📍</span>
-                            <span>Arrives ~{arrDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.arrival_location_name})</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-[#054752]">{ride.driver?.name || 'Driver'}</span>
-                            <span className="text-amber-500 font-bold">★ {ride.driver?.rating || 4.9}</span>
-                          </div>
-                          <span className="font-bold text-emerald-600">
-                            {ride.available_seats} seat{ride.available_seats === 1 ? '' : 's'} available
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 pt-3 border-t border-gray-50 flex items-center justify-between gap-3">
-                        <span className="text-xs text-[#708c91] truncate">
-                          {ride.vehicle?.make} {ride.vehicle?.model}
-                        </span>
-
-                        <Link
-                          href={`/trip/${ride.multimodal_id || ride.id}`}
-                          className="py-2 px-5 rounded-full font-bold text-xs bg-[#00aff5] text-white hover:bg-[#008ecc] transition shadow-sm"
-                        >
-                          View & Book
-                        </Link>
                       </div>
                     </div>
                   );
