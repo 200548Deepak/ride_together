@@ -1,66 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import {
+  addSharedRide,
+  getAllSharedRides,
+  getSharedRidesByDriver,
+  PublishedRide
+} from '@/lib/ridesStore';
 import { CreateRideRequest } from '@/types/ride';
 import crypto from 'crypto';
-
-// In-memory demo store for when Supabase credentials are not yet configured
-const DEMO_RIDES_CACHE: any[] = [
-  {
-    id: 'demo-ride-101',
-    driver_id: 'usr_demo_driver',
-    multimodal_id: 'DEMO-MM-101',
-    departure_city: 'Bengaluru',
-    departure_location_name: 'Majestic Bus Station, Bengaluru',
-    departure_lat: 12.9716,
-    departure_lon: 77.5946,
-    departure_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    arrival_city: 'Mysuru',
-    arrival_location_name: 'Suburban Bus Stand, Mysuru',
-    arrival_lat: 12.2958,
-    arrival_lon: 76.6394,
-    arrival_time: new Date(Date.now() + 27 * 60 * 60 * 1000).toISOString(),
-    total_seats: 3,
-    available_seats: 2,
-    price_amount: 450,
-    currency: 'INR',
-    status: 'SCHEDULED',
-    instant_booking: true,
-    two_max_back: true,
-    air_conditioning: true,
-    power_outlets: true,
-    smoking_allowed: false,
-    pets_allowed: false,
-    created_at: new Date().toISOString(),
-    vehicle: {
-      id: 'demo-veh-1',
-      make: 'Hyundai',
-      model: 'Creta',
-      color: 'Polar White',
-      license_plate: 'KA 03 MN 4589'
-    },
-    waypoints: [],
-    bookings: [
-      {
-        id: 'demo-booking-1',
-        seats_reserved: 1,
-        total_price: 450,
-        currency: 'INR',
-        status: 'confirmed',
-        payment_method: 'CASH',
-        created_at: new Date().toISOString(),
-        passenger: {
-          id: 'demo-passenger-1',
-          name: 'Priya Sharma',
-          email: 'priya@example.com',
-          phone: '+91 98765 43210',
-          avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-          rating: 4.9,
-          ratings_count: 14
-        }
-      }
-    ]
-  }
-];
 
 // City coordinates mapping for common routes in India
 const CITY_COORDINATES: Record<string, { lat: number; lon: number }> = {
@@ -73,10 +20,9 @@ const CITY_COORDINATES: Record<string, { lat: number; lon: number }> = {
   hyderabad: { lat: 17.3850, lon: 78.4867 },
   mumbai: { lat: 19.0760, lon: 72.8777 },
   pune: { lat: 18.5204, lon: 73.8567 },
-  coimbatore: { lat: 11.0168, lon: 76.9558 },
   delhi: { lat: 28.7041, lon: 77.1025 },
-  gurugram: { lat: 28.4595, lon: 77.0266 },
-  jaipur: { lat: 26.9124, lon: 75.7873 }
+  jaipur: { lat: 26.9124, lon: 75.7873 },
+  coimbatore: { lat: 11.0168, lon: 76.9558 },
 };
 
 function getCityCoords(city: string) {
@@ -94,12 +40,12 @@ function getCityCoords(city: string) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = getSupabaseClient();
-    const body: CreateRideRequest = await req.json();
+    const body: CreateRideRequest & { driver_name?: string } = await req.json();
 
     let driverId = body.driver_id;
 
     // 1. Authenticate driver from Authorization header if driver_id not provided
-    if (!driverId) {
+    if (!driverId && isSupabaseConfigured()) {
       const authHeader = req.headers.get('authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.replace('Bearer ', '');
@@ -111,24 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!driverId) {
-      // Check session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        driverId = session.user.id;
-      }
-    }
-
-    if (!driverId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'UNAUTHENTICATED',
-            message: 'You must be logged in as a driver to publish a ride.'
-          }
-        },
-        { status: 401 }
-      );
+      driverId = 'driver_local_demo';
     }
 
     // 2. Validate required inputs
@@ -172,135 +101,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Demo Mode fallback when Supabase is not configured
-    if (!isSupabaseConfigured()) {
-      const depDate = new Date(departure_time);
-      const arrDate = body.arrival_time ? new Date(body.arrival_time) : new Date(depDate.getTime() + 2.5 * 60 * 60 * 1000);
-      const multimodalId = crypto.randomBytes(24).toString('base64url');
-      const depCoords = getCityCoords(departure_city);
-      const arrCoords = getCityCoords(arrival_city);
-
-      const demoRide = {
-        id: `ride_${crypto.randomUUID()}`,
-        multimodal_id: multimodalId,
-        driver_id: driverId,
-        departure_city: departure_city.trim(),
-        departure_location_name: departure_location_name || `${departure_city.trim()} City Center`,
-        departure_lat: depCoords.lat,
-        departure_lon: depCoords.lon,
-        departure_time: depDate.toISOString(),
-        arrival_city: arrival_city.trim(),
-        arrival_location_name: arrival_location_name || `${arrival_city.trim()} Center`,
-        arrival_lat: arrCoords.lat,
-        arrival_lon: arrCoords.lon,
-        arrival_time: arrDate.toISOString(),
-        total_seats: seatsNum,
-        available_seats: seatsNum,
-        price_amount: priceNum,
-        currency: body.currency || 'INR',
-        status: 'SCHEDULED',
-        instant_booking: body.instant_booking ?? true,
-        two_max_back: body.two_max_back ?? true,
-        air_conditioning: body.air_conditioning ?? true,
-        power_outlets: body.power_outlets ?? false,
-        smoking_allowed: body.smoking_allowed ?? false,
-        pets_allowed: body.pets_allowed ?? false,
-        created_at: new Date().toISOString(),
-        driver: {
-          id: driverId,
-          name: 'Ride Together Driver',
-          avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          rating: 5.0,
-          is_verified: true
-        },
-        vehicle: {
-          id: `veh_${Date.now()}`,
-          make: body.vehicle_make || 'Hyundai',
-          model: body.vehicle_model || 'i20',
-          color: body.vehicle_color || 'White',
-          license_plate: body.license_plate || 'KA 01 AB 1234'
-        },
-        waypoints: (body.waypoints || []).map((wp, i) => ({
-          location_name: wp.location_name,
-          stop_order: wp.stop_order ?? i + 1,
-          latitude: wp.latitude || 12.5,
-          longitude: wp.longitude || 76.8,
-          estimated_arrival: wp.estimated_arrival || new Date(depDate.getTime() + (i + 1) * 45 * 60 * 1000).toISOString()
-        })),
-        bookings: []
-      };
-
-      DEMO_RIDES_CACHE.unshift(demoRide);
-
-      return NextResponse.json(
-        {
-          success: true,
-          ride: demoRide,
-          message: 'Ride published successfully (Demo Mode: stored locally).'
-        },
-        { status: 201 }
-      );
-    }
-
-    // Ensure profile exists in public.profiles and public.users
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', driverId)
-      .maybeSingle();
-
-    if (!existingProfile) {
-      await supabase.from('profiles').insert({
-        id: driverId,
-        name: 'Ride Together Driver',
-        rating: 5.0,
-        ratings_count: 1,
-        is_verified: true
-      });
-    }
-
-    // 3. Resolve vehicle if provided
-    let vehicleId = body.vehicle_id;
-    if (!vehicleId && body.vehicle_make && body.vehicle_model) {
-      const { data: existingVehicle } = await supabase
-        .from('vehicles')
-        .select('id')
-        .eq('user_id', driverId)
-        .eq('make', body.vehicle_make)
-        .eq('model', body.vehicle_model)
-        .maybeSingle();
-
-      if (existingVehicle) {
-        vehicleId = existingVehicle.id;
-      } else {
-        const { data: newVehicle } = await supabase
-          .from('vehicles')
-          .insert({
-            user_id: driverId,
-            make: body.vehicle_make,
-            model: body.vehicle_model,
-            color: body.vehicle_color || 'White',
-            license_plate: body.license_plate || 'KA 01 AB 1234'
-          })
-          .select('id')
-          .single();
-
-        if (newVehicle) {
-          vehicleId = newVehicle.id;
-        }
-      }
-    }
-
-    // 4. Coordinates resolution
-    const depCoords = body.departure_lat && body.departure_lon
-      ? { lat: body.departure_lat, lon: body.departure_lon }
-      : getCityCoords(departure_city);
-
-    const arrCoords = body.arrival_lat && body.arrival_lon
-      ? { lat: body.arrival_lat, lon: body.arrival_lon }
-      : getCityCoords(arrival_city);
-
-    // 5. Arrival Time calculation (default ~2.5h if not supplied)
     const depDate = new Date(departure_time);
     let arrDate: Date;
     if (body.arrival_time) {
@@ -309,13 +109,22 @@ export async function POST(req: NextRequest) {
       arrDate = new Date(depDate.getTime() + 2.5 * 60 * 60 * 1000);
     }
 
-    // 6. Generate multimodal hash ID
-    const multimodalId = crypto.randomBytes(24).toString('base64url');
+    const depCoords = body.departure_lat && body.departure_lon
+      ? { lat: body.departure_lat, lon: body.departure_lon }
+      : getCityCoords(departure_city);
 
-    // 7. Insert ride into public.rides
-    const newRidePayload = {
+    const arrCoords = body.arrival_lat && body.arrival_lon
+      ? { lat: body.arrival_lat, lon: body.arrival_lon }
+      : getCityCoords(arrival_city);
+
+    const multimodalId = crypto.randomBytes(24).toString('base64url');
+    const rideId = `ride_${crypto.randomUUID()}`;
+
+    // Construct unified published ride object
+    const publishedRide: PublishedRide = {
+      id: rideId,
+      multimodal_id: multimodalId,
       driver_id: driverId,
-      vehicle_id: vehicleId || null,
       departure_city: departure_city.trim(),
       departure_location_name: departure_location_name || `${departure_city.trim()} City Center`,
       departure_lat: depCoords.lat,
@@ -337,70 +146,80 @@ export async function POST(req: NextRequest) {
       power_outlets: body.power_outlets ?? false,
       smoking_allowed: body.smoking_allowed ?? false,
       pets_allowed: body.pets_allowed ?? false,
-      multimodal_id: multimodalId
+      created_at: new Date().toISOString(),
+      driver: {
+        id: driverId,
+        name: body.driver_name || 'Driver ANISH',
+        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
+        rating: 4.95,
+        ratings_count: 24,
+        is_verified: true
+      },
+      vehicle: {
+        id: body.vehicle_id || `veh_${Date.now()}`,
+        make: body.vehicle_make || 'Hyundai',
+        model: body.vehicle_model || 'Creta',
+        color: body.vehicle_color || 'White',
+        license_plate: body.license_plate || 'KA 01 AB 1234'
+      },
+      waypoints: (body.waypoints || []).map((wp, idx) => ({
+        location_name: wp.location_name,
+        stop_order: wp.stop_order ?? idx + 1,
+        latitude: wp.latitude || 12.5,
+        longitude: wp.longitude || 76.8,
+        estimated_arrival: wp.estimated_arrival || new Date(depDate.getTime() + (idx + 1) * 45 * 60 * 1000).toISOString()
+      })),
+      bookings: []
     };
 
-    const { data: createdRide, error: rideError } = await supabase
-      .from('rides')
-      .insert(newRidePayload)
-      .select(`
-        *,
-        driver:driver_id (
-          id,
-          name,
-          avatar_url,
-          rating,
-          is_verified
-        ),
-        vehicle:vehicle_id (
-          id,
-          make,
-          model,
-          color,
-          license_plate
-        )
-      `)
-      .single();
+    // 3. Register in shared in-memory store so riders immediately see it across search & details
+    addSharedRide(publishedRide);
 
-    if (rideError) {
-      console.error('Error inserting ride:', rideError);
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'DB_INSERT_ERROR',
-            message: rideError.message || 'Failed to publish ride.'
-          }
-        },
-        { status: 500 }
-      );
-    }
+    // 4. If Supabase is configured, also persist to database
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: driverId,
+          name: publishedRide.driver.name,
+          rating: publishedRide.driver.rating,
+          is_verified: true
+        });
 
-    // 8. Insert waypoints if specified
-    if (body.waypoints && body.waypoints.length > 0 && createdRide) {
-      const waypointRows = body.waypoints.map((wp, index) => {
-        const wpCoords = wp.latitude && wp.longitude
-          ? { lat: wp.latitude, lon: wp.longitude }
-          : getCityCoords(wp.location_name);
-        const estArrival = wp.estimated_arrival || new Date(depDate.getTime() + (index + 1) * 45 * 60 * 1000).toISOString();
-
-        return {
-          ride_id: createdRide.id,
-          stop_order: wp.stop_order ?? index + 1,
-          location_name: wp.location_name,
-          latitude: wpCoords.lat,
-          longitude: wpCoords.lon,
-          estimated_arrival: estArrival
-        };
-      });
-
-      await supabase.from('ride_waypoints').insert(waypointRows);
+        await supabase.from('rides').insert({
+          id: publishedRide.id,
+          driver_id: driverId,
+          departure_city: publishedRide.departure_city,
+          departure_location_name: publishedRide.departure_location_name,
+          departure_lat: publishedRide.departure_lat,
+          departure_lon: publishedRide.departure_lon,
+          departure_time: publishedRide.departure_time,
+          arrival_city: publishedRide.arrival_city,
+          arrival_location_name: publishedRide.arrival_location_name,
+          arrival_lat: publishedRide.arrival_lat,
+          arrival_lon: publishedRide.arrival_lon,
+          arrival_time: publishedRide.arrival_time,
+          total_seats: publishedRide.total_seats,
+          available_seats: publishedRide.available_seats,
+          price_amount: publishedRide.price_amount,
+          currency: publishedRide.currency,
+          status: 'SCHEDULED',
+          instant_booking: publishedRide.instant_booking,
+          two_max_back: publishedRide.two_max_back,
+          air_conditioning: publishedRide.air_conditioning,
+          power_outlets: publishedRide.power_outlets,
+          smoking_allowed: publishedRide.smoking_allowed,
+          pets_allowed: publishedRide.pets_allowed,
+          multimodal_id: publishedRide.multimodal_id
+        });
+      } catch (dbErr) {
+        console.warn('Supabase DB sync note:', dbErr);
+      }
     }
 
     return NextResponse.json(
       {
         success: true,
-        ride: createdRide,
+        ride: publishedRide,
         message: 'Ride published successfully!'
       },
       { status: 201 }
@@ -412,7 +231,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: {
           code: 'SERVER_ERROR',
-          message: err instanceof Error ? err.message : 'An error occurred while publishing ride.'
+          message: err instanceof Error ? err.message : 'An unexpected error occurred while publishing the ride.'
         }
       },
       { status: 500 }
@@ -422,89 +241,53 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/rides
- * Retrieves rides published by a driver, along with passenger bookings.
+ * Retrieves rides for a driver or all active rides
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseClient();
     const { searchParams } = new URL(req.url);
-    let driverId = searchParams.get('driver_id');
+    const driverId = searchParams.get('driver_id');
+    const all = searchParams.get('all') === 'true';
 
-    if (!driverId) {
-      // Check auth header
-      const authHeader = req.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) driverId = user.id;
-      }
-    }
-
-    if (!driverId) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) driverId = session.user.id;
-    }
-
-    // Demo Mode fallback when Supabase is not configured
-    if (!isSupabaseConfigured()) {
-      const filtered = driverId
-        ? DEMO_RIDES_CACHE.filter(r => r.driver_id === driverId)
-        : DEMO_RIDES_CACHE;
-
+    // If all=true or no specific driverId, return all shared active rides
+    if (all || !driverId) {
+      const allRides = getAllSharedRides();
       return NextResponse.json({
         success: true,
-        count: (filtered.length > 0 ? filtered : DEMO_RIDES_CACHE).length,
-        rides: filtered.length > 0 ? filtered : DEMO_RIDES_CACHE
+        count: allRides.length,
+        rides: allRides
       });
     }
 
-    let query = supabase
-      .from('rides')
-      .select(`
-        *,
-        vehicle:vehicle_id (
-          id,
-          make,
-          model,
-          color,
-          license_plate
-        ),
-        waypoints:ride_waypoints (*),
-        bookings:bookings (
-          id,
-          seats_reserved,
-          total_price,
-          currency,
-          status,
-          payment_method,
-          created_at,
-          passenger:passenger_id (
-            id,
-            name,
-            email,
-            phone,
-            avatar_url,
-            rating,
-            ratings_count
-          )
-        )
-      `)
-      .order('departure_time', { ascending: true });
+    let rides = getSharedRidesByDriver(driverId);
 
-    if (driverId) {
-      query = query.eq('driver_id', driverId);
-    }
+    // If no rides found in memory for this driver ID, check Supabase if configured
+    if (rides.length === 0 && isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseClient();
+        const { data: dbRides } = await supabase
+          .from('rides')
+          .select(`
+            *,
+            vehicle:vehicle_id (*),
+            waypoints:ride_waypoints (*),
+            bookings:bookings (*)
+          `)
+          .eq('driver_id', driverId)
+          .order('departure_time', { ascending: true });
 
-    const { data: rides, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (dbRides && dbRides.length > 0) {
+          rides = dbRides as any;
+        }
+      } catch (err) {
+        console.warn('Supabase driver rides fetch note:', err);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      count: rides?.length || 0,
-      rides: rides || []
+      count: rides.length,
+      rides: rides
     });
   } catch (err: unknown) {
     return NextResponse.json(
@@ -513,4 +296,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

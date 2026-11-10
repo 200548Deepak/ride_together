@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import {
+  bookSharedRide,
+  getSharedBookingsByPassenger,
+  updateSharedBookingStatus,
+  getSharedRideById
+} from '@/lib/ridesStore';
 import { BookingRequest, BookingResponse } from '@/types/booking';
 
 /**
@@ -75,26 +81,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Demo Mode fallback when Supabase is not configured
-    if (!isSupabaseConfigured()) {
-      const calculatedPrice = total_price != null ? Number(total_price) : 500 * requestedSeats;
-      const demoBooking = {
-        id: `demo-booking-${Date.now()}`,
-        trip_id: trip_id || multimodal_id || 'demo-trip-1',
-        passenger_id: passenger_id || 'usr_demo_passenger',
-        seats_reserved: requestedSeats,
-        total_price: calculatedPrice,
-        currency,
-        status: 'confirmed' as const,
-        payment_method,
-        created_at: new Date().toISOString()
-      };
+    // 2. Reserve seats in shared store (works seamlessly for local demo and cloud)
+    const targetId = trip_id || multimodal_id || '';
+    const initialCalcPrice = total_price != null ? Number(total_price) : 500 * requestedSeats;
+
+    const storeResult = bookSharedRide(targetId, {
+      passenger_id: passenger_id,
+      seats_reserved: requestedSeats,
+      total_price: initialCalcPrice,
+      currency,
+      payment_method,
+    });
+
+    if (storeResult.success && storeResult.booking) {
+      // If Supabase is configured, also persist to database
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.from('bookings').insert({
+            id: storeResult.booking.id,
+            trip_id: storeResult.booking.trip_id,
+            ride_id: storeResult.booking.trip_id,
+            passenger_id: passenger_id,
+            seats_reserved: requestedSeats,
+            seats_booked: requestedSeats,
+            total_price: initialCalcPrice,
+            currency: currency,
+            status: storeResult.booking.status,
+            payment_method: payment_method,
+          });
+        } catch (dbErr) {
+          console.warn('Supabase booking sync note:', dbErr);
+        }
+      }
 
       return NextResponse.json<BookingResponse>(
         {
           success: true,
-          booking: demoBooking,
-          message: 'Booking reservation confirmed successfully (Demo Mode)!'
+          booking: storeResult.booking as any,
+          message: 'Booking reservation confirmed successfully!'
         },
         { status: 201 }
       );
@@ -286,39 +310,78 @@ export async function GET(req: NextRequest) {
     const trip_id = searchParams.get('trip_id');
     const passenger_id = searchParams.get('passenger_id');
 
-    let query = supabase.from('bookings').select(`
-      *,
-      passengers:passenger_id (
-        id,
-        name,
-        avatar_url,
-        rating
-      ),
-      rides:trip_id (
-        id,
-        departure_city,
-        arrival_city,
-        departure_time,
-        arrival_time,
-        price_amount,
-        available_seats
-      )
-    `);
-
-    if (trip_id) {
-      query = query.eq('trip_id', trip_id);
-    }
+    // 1. Gather bookings from shared store first
+    let mappedBookings: any[] = [];
     if (passenger_id) {
-      query = query.eq('passenger_id', passenger_id);
+      const sharedList = getSharedBookingsByPassenger(passenger_id);
+      mappedBookings = sharedList.map(({ booking, ride }) => ({
+        id: booking.id,
+        trip_id: ride.id,
+        passenger_id: booking.passenger_id,
+        seats_reserved: booking.seats_reserved,
+        total_price: booking.total_price,
+        currency: booking.currency,
+        status: booking.status,
+        payment_method: booking.payment_method,
+        created_at: booking.created_at,
+        passengers: booking.passenger,
+        rides: {
+          id: ride.id,
+          departure_city: ride.departure_city,
+          departure_location_name: ride.departure_location_name,
+          arrival_city: ride.arrival_city,
+          arrival_location_name: ride.arrival_location_name,
+          departure_time: ride.departure_time,
+          arrival_time: ride.arrival_time,
+          price_amount: ride.price_amount,
+          available_seats: ride.available_seats,
+          driver: ride.driver,
+          vehicle: ride.vehicle,
+        }
+      }));
     }
 
-    const { data: bookings, error } = await query.order('created_at', { ascending: false });
+    // 2. Also check Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        let query = supabase.from('bookings').select(`
+          *,
+          passengers:passenger_id (
+            id,
+            name,
+            avatar_url,
+            rating
+          ),
+          rides:trip_id (
+            id,
+            departure_city,
+            departure_location_name,
+            arrival_city,
+            arrival_location_name,
+            departure_time,
+            arrival_time,
+            price_amount,
+            available_seats
+          )
+        `);
 
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (trip_id) query = query.eq('trip_id', trip_id);
+        if (passenger_id) query = query.eq('passenger_id', passenger_id);
+
+        const { data: dbBookings } = await query.order('created_at', { ascending: false });
+        if (dbBookings && dbBookings.length > 0) {
+          for (const dbB of dbBookings) {
+            if (!mappedBookings.some(b => b.id === dbB.id)) {
+              mappedBookings.push(dbB);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase bookings query note:', err);
+      }
     }
 
-    return NextResponse.json({ success: true, count: bookings?.length || 0, bookings });
+    return NextResponse.json({ success: true, count: mappedBookings.length, bookings: mappedBookings });
   } catch (err: unknown) {
     return NextResponse.json(
       { success: false, error: err instanceof Error ? err.message : 'Failed to retrieve bookings' },
@@ -344,14 +407,24 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Demo Mode fallback when Supabase is not configured
-    if (!isSupabaseConfigured()) {
-      return NextResponse.json({
-        success: true,
-        booking: { id: booking_id, status },
-        message: `Booking has been ${status} (Demo Mode)`
-      });
+    // Update in shared store
+    updateSharedBookingStatus(booking_id, status);
+
+    // Also update in Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('bookings')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('id', booking_id);
+      } catch (e) {}
     }
+
+    return NextResponse.json({
+      success: true,
+      booking: { id: booking_id, status },
+      message: `Booking has been ${status}`
+    });
 
     if (!['confirmed', 'cancelled', 'pending'].includes(status)) {
       return NextResponse.json(
@@ -384,7 +457,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (updateErr) {
-      return NextResponse.json({ success: false, error: updateErr.message }, { status: 500 });
+      return NextResponse.json({ success: false, error: updateErr?.message || 'Failed to update booking' }, { status: 500 });
     }
 
     // Adjust ride available_seats if transitioning

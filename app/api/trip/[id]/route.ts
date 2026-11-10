@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getSharedRideById, PublishedRide } from '@/lib/ridesStore';
 import { RideDetailsData } from '@/types/booking';
 
 export async function GET(
@@ -47,9 +48,31 @@ export async function GET(
       query = query.eq('multimodal_id', id);
     }
 
-    const { data: ride, error } = await query.maybeSingle();
+    let activeRide: any = null;
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: dbRide } = await query.maybeSingle();
+        if (dbRide) activeRide = dbRide;
+      } catch (e) {
+        console.warn('Database query error in /trip/[id]:', e);
+      }
+    }
 
-    if (ride) {
+    if (!activeRide) {
+      const shared = getSharedRideById(id);
+      if (shared) {
+        const depTime = new Date(shared.departure_time);
+        const arrTime = new Date(shared.arrival_time);
+        activeRide = {
+          ...shared,
+          duration_minutes: Math.max(30, Math.round((arrTime.getTime() - depTime.getTime()) / (60 * 1000))),
+          is_overnight: arrTime.getDate() !== depTime.getDate(),
+        };
+      }
+    }
+
+    if (activeRide) {
+      const ride = activeRide;
       const depDate = new Date(ride.departure_time);
       const arrDate = new Date(ride.arrival_time);
 

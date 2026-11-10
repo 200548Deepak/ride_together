@@ -88,6 +88,13 @@ export interface DriverRideItem {
   smoking_allowed: boolean;
   pets_allowed: boolean;
   created_at: string;
+  driver?: {
+    id?: string;
+    name: string;
+    avatar_url?: string;
+    rating?: number;
+    is_verified?: boolean;
+  };
   vehicle?: {
     id?: string;
     make: string;

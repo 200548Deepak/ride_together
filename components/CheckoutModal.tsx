@@ -56,7 +56,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         } else if (!local) {
           setUser(null);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [isOpen, ride, initialSeats]);
 
@@ -296,11 +296,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('CASH')}
-                    className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-sm font-semibold text-left transition-all ${
-                      paymentMethod === 'CASH'
+                    className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-sm font-semibold text-left transition-all ${paymentMethod === 'CASH'
                         ? 'border-[#00aff5] bg-[#00aff5]/5 text-[#054752]'
                         : 'border-slate-200 text-[#708c91] hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <span className="text-lg">💵</span>
                     <div>
@@ -312,11 +311,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('ONLINE')}
-                    className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-sm font-semibold text-left transition-all ${
-                      paymentMethod === 'ONLINE'
+                    className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-sm font-semibold text-left transition-all ${paymentMethod === 'ONLINE'
                         ? 'border-[#00aff5] bg-[#00aff5]/5 text-[#054752]'
                         : 'border-slate-200 text-[#708c91] hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <span className="text-lg">⚡</span>
                     <div>

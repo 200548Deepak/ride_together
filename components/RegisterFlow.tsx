@@ -295,13 +295,12 @@ export default function RegisterFlow({
             {Array.from({ length: totalSteps }).map((_, i) => (
               <span
                 key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i + 1 === step
+                className={`h-1.5 rounded-full transition-all duration-300 ${i + 1 === step
                     ? 'w-6 bg-[#00aff5]'
                     : i + 1 < step
-                    ? 'w-2 bg-[#00aff5]/60'
-                    : 'w-2 bg-slate-200'
-                }`}
+                      ? 'w-2 bg-[#00aff5]/60'
+                      : 'w-2 bg-slate-200'
+                  }`}
               />
             ))}
           </div>
@@ -522,11 +521,10 @@ export default function RegisterFlow({
                 ].map((opt) => (
                   <label
                     key={opt.value}
-                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
-                      gender === opt.value
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${gender === opt.value
                         ? 'border-[#00aff5] bg-[#00aff5]/5'
                         : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <span className="font-semibold text-sm text-[#054752]">
                       {opt.label}
@@ -540,11 +538,10 @@ export default function RegisterFlow({
                       className="sr-only"
                     />
                     <span
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                        gender === opt.value
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${gender === opt.value
                           ? 'border-[#00aff5] bg-[#00aff5]'
                           : 'border-slate-300 bg-white'
-                      }`}
+                        }`}
                     >
                       {gender === opt.value && (
                         <span className="w-2 h-2 rounded-full bg-white ring-2 ring-[#00aff5]" />
@@ -611,9 +608,8 @@ export default function RegisterFlow({
               <div className="p-3.5 bg-slate-50 rounded-xl space-y-2 text-xs">
                 <div className="flex items-center space-x-2">
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      hasMinLength ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasMinLength ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
+                      }`}
                   >
                     ✓
                   </span>
@@ -624,9 +620,8 @@ export default function RegisterFlow({
 
                 <div className="flex items-center space-x-2">
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      hasLetter ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasLetter ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
+                      }`}
                   >
                     ✓
                   </span>
@@ -637,9 +632,8 @@ export default function RegisterFlow({
 
                 <div className="flex items-center space-x-2">
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                      hasNumberOrSymbol ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${hasNumberOrSymbol ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
+                      }`}
                   >
                     ✓
                   </span>

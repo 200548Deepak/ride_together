@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
 import { DriverRideItem, DriverRideBooking } from '@/types/ride';
 import PublishRideFlow from './PublishRideFlow';
@@ -11,6 +12,11 @@ interface DriverDashboardProps {
 
 export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin }) => {
   const [rides, setRides] = useState<DriverRideItem[]>([]);
+  const [allCommunityRides, setAllCommunityRides] = useState<DriverRideItem[]>([]);
+  const [passengerBookings, setPassengerBookings] = useState<any[]>([]);
+  
+  // Dashboard view mode: 'driver' (offered rides) | 'passenger' (my bookings) | 'all' (explore all community rides)
+  const [mode, setMode] = useState<'driver' | 'passenger' | 'all'>('driver');
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [isLoading, setIsLoading] = useState(true);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
@@ -20,96 +26,85 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
 
   const supabase = getSupabaseClient();
 
-  const fetchDriverRides = useCallback(async (driverId: string) => {
+  const fetchDashboardData = useCallback(async (userId?: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/rides?driver_id=${encodeURIComponent(driverId)}`);
-      const data = await res.json();
 
-      if (res.ok && data.success) {
-        setRides(data.rides || []);
-      } else {
-        // Fallback: direct Supabase select
-        const { data: directRides } = await supabase
-          .from('rides')
-          .select(`
-            *,
-            vehicle:vehicle_id (
-              id,
-              make,
-              model,
-              color,
-              license_plate
-            ),
-            waypoints:ride_waypoints (*),
-            bookings:bookings (
-              id,
-              seats_reserved,
-              total_price,
-              currency,
-              status,
-              payment_method,
-              created_at,
-              passenger:passenger_id (
-                id,
-                name,
-                email,
-                phone,
-                avatar_url,
-                rating,
-                ratings_count
-              )
-            )
-          `)
-          .eq('driver_id', driverId)
-          .order('departure_time', { ascending: true });
+      // 1. Fetch all community rides
+      const allRes = await fetch('/api/rides?all=true');
+      const allData = await allRes.json();
+      if (allRes.ok && allData.success) {
+        setAllCommunityRides(allData.rides || []);
+      }
 
-        if (directRides) {
-          setRides(directRides as DriverRideItem[]);
+      if (userId) {
+        // 2. Fetch rides published by this user as driver
+        const res = await fetch(`/api/rides?driver_id=${encodeURIComponent(userId)}`);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setRides(data.rides || []);
+        }
+
+        // 3. Fetch passenger bookings for this user
+        const bookRes = await fetch(`/api/bookings?passenger_id=${encodeURIComponent(userId)}`);
+        const bookData = await bookRes.json();
+        if (bookRes.ok && bookData.success) {
+          setPassengerBookings(bookData.bookings || []);
         }
       }
     } catch (err) {
-      console.error('Failed to fetch driver rides:', err);
+      console.error('Failed to fetch dashboard data:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
+    // Read query parameter ?mode=... if available
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get('mode');
+      if (modeParam === 'passenger' || modeParam === 'driver' || modeParam === 'all') {
+        setMode(modeParam);
+      }
+    }
+
     // 1. Check local session
     const local = getLocalUser();
     if (local) {
       const u = {
         id: local.id,
-        name: local.name || local.email?.split('@')[0] || 'Driver',
+        name: local.name || local.email?.split('@')[0] || 'Member',
         email: local.email
       };
       setUser(u);
-      fetchDriverRides(u.id);
+      fetchDashboardData(u.id);
+    } else {
+      fetchDashboardData();
     }
 
     // 2. Query Supabase auth if configured
     if (isSupabaseConfigured()) {
-      const supabase = getSupabaseClient();
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
           const u = {
             id: data.user.id,
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver',
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Member',
             email: data.user.email
           };
           setUser(u);
-          fetchDriverRides(u.id);
-        } else if (!local) {
-          setIsLoading(false);
+          fetchDashboardData(u.id);
         }
-      }).catch(() => {
-        if (!local) setIsLoading(false);
-      });
-    } else if (!local) {
-      setIsLoading(false);
+      }).catch(() => {});
     }
-  }, [fetchDriverRides]);
+
+    // 3. Listen for dynamic ride publication
+    const handleRidePublished = () => {
+      fetchDashboardData(user?.id);
+    };
+    window.addEventListener('ride-published', handleRidePublished);
+    return () => window.removeEventListener('ride-published', handleRidePublished);
+  }, [fetchDashboardData, supabase.auth, user?.id]);
 
   const handleBookingAction = async (bookingId: string, status: 'confirmed' | 'cancelled') => {
     setActionLoadingId(bookingId);
@@ -130,7 +125,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
 
       setFeedbackMessage(`Booking has been ${status === 'confirmed' ? 'accepted' : 'declined'}.`);
       if (user) {
-        fetchDriverRides(user.id);
+        fetchDashboardData(user.id);
       }
     } catch (err: unknown) {
       setFeedbackMessage(err instanceof Error ? err.message : 'Error updating booking');
@@ -142,7 +137,6 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
   const now = new Date();
   const upcomingRides = rides.filter(r => new Date(r.departure_time) >= now);
   const pastRides = rides.filter(r => new Date(r.departure_time) < now);
-
   const displayedRides = activeTab === 'upcoming' ? upcomingRides : pastRides;
 
   // Aggregate Stats
@@ -161,7 +155,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         <PublishRideFlow
           onSuccess={() => {
             setIsPublishOpen(false);
-            if (user) fetchDriverRides(user.id);
+            if (user) fetchDashboardData(user.id);
           }}
           onCancel={() => setIsPublishOpen(false)}
           onOpenLogin={onOpenLogin}
@@ -178,25 +172,77 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cyan-100 text-[#00aff5]">
-                Driver Hub
+                {mode === 'driver' ? 'Driver Hub' : mode === 'passenger' ? 'Rider Bookings' : 'Community Rides'}
               </span>
-              <span className="text-xs text-[#708c91]">Manage your carpooling activity</span>
+              <span className="text-xs text-[#708c91]">
+                {mode === 'driver' ? 'Manage your offered itineraries & passenger requests' : 'View and track all ride activity'}
+              </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#054752] mt-1 tracking-tight">
-              {user ? `Welcome back, ${user.name}` : 'Driver Dashboard'}
+              {user ? `Hello, ${user.name}` : 'Rides & Bookings Portal'}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/search"
+              className="py-3 px-5 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition text-sm flex items-center gap-2"
+            >
+              <span>🔍</span>
+              <span>Find Rides</span>
+            </Link>
+
             <button
               type="button"
               onClick={() => setIsPublishOpen(true)}
-              className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm"
+              className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm cursor-pointer"
             >
               <span className="text-lg leading-none">+</span>
-              <span>Publish a Ride</span>
+              <span>Offer a Ride</span>
             </button>
           </div>
+        </div>
+
+        {/* Primary View Switcher: Driver Offered | Passenger Bookings | All Community Rides */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-2 pt-2 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setMode('driver')}
+            className={`pb-3.5 pt-2 px-4 font-extrabold text-sm border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              mode === 'driver'
+                ? 'border-[#00aff5] text-[#00aff5]'
+                : 'border-transparent text-[#708c91] hover:text-[#054752]'
+            }`}
+          >
+            <span>🚗</span>
+            <span>Driver Offered Rides ({rides.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMode('passenger')}
+            className={`pb-3.5 pt-2 px-4 font-extrabold text-sm border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              mode === 'passenger'
+                ? 'border-[#00aff5] text-[#00aff5]'
+                : 'border-transparent text-[#708c91] hover:text-[#054752]'
+            }`}
+          >
+            <span>🎫</span>
+            <span>My Booked Rides ({passengerBookings.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMode('all')}
+            className={`pb-3.5 pt-2 px-4 font-extrabold text-sm border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              mode === 'all'
+                ? 'border-[#00aff5] text-[#00aff5]'
+                : 'border-transparent text-[#708c91] hover:text-[#054752]'
+            }`}
+          >
+            <span>🌐</span>
+            <span>Explore All Community Rides ({allCommunityRides.length})</span>
+          </button>
         </div>
       </div>
 
@@ -216,7 +262,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
             <button
               type="button"
               onClick={onOpenLogin}
-              className="py-2.5 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] text-xs transition-colors shadow"
+              className="py-2.5 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] text-xs transition-colors shadow cursor-pointer"
             >
               Log in / Register
             </button>
@@ -237,280 +283,487 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
           </div>
         )}
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-            <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
-              Total Rides Published
-            </div>
-            <div className="text-3xl font-black text-[#054752] mt-2">
-              {totalRidesCount}
-            </div>
-            <div className="text-xs text-[#708c91] mt-1">
-              {upcomingRides.length} active scheduled
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-            <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
-              Passengers Transported
-            </div>
-            <div className="text-3xl font-black text-[#054752] mt-2">
-              {totalBookings}
-            </div>
-            <div className="text-xs text-emerald-600 font-semibold mt-1">
-              Confirmed community bookings
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-            <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
-              Total Travel Earnings
-            </div>
-            <div className="text-3xl font-black text-emerald-600 mt-2">
-              ₹{totalEarnings.toFixed(2)}
-            </div>
-            <div className="text-xs text-[#708c91] mt-1">
-              Cash & digital cost sharing
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs: Upcoming vs Past Rides */}
-        <div className="flex items-center gap-2 border-b border-gray-200">
-          <button
-            type="button"
-            onClick={() => setActiveTab('upcoming')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors ${
-              activeTab === 'upcoming'
-                ? 'border-[#00aff5] text-[#00aff5]'
-                : 'border-transparent text-[#708c91] hover:text-[#054752]'
-            }`}
-          >
-            Upcoming Rides ({upcomingRides.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('past')}
-            className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors ${
-              activeTab === 'past'
-                ? 'border-[#00aff5] text-[#00aff5]'
-                : 'border-transparent text-[#708c91] hover:text-[#054752]'
-            }`}
-          >
-            Past Rides ({pastRides.length})
-          </button>
-        </div>
-
-        {/* Rides List */}
-        {isLoading ? (
-          <div className="text-center py-16">
-            <div className="w-10 h-10 border-4 border-[#00aff5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm font-semibold text-[#708c91]">Loading your rides...</p>
-          </div>
-        ) : displayedRides.length === 0 ? (
-          /* Empty State */
-          <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm max-w-lg mx-auto">
-            <div className="w-16 h-16 bg-cyan-50 text-[#00aff5] rounded-full flex items-center justify-center mx-auto text-2xl mb-4 font-bold">
-              🚗
-            </div>
-            <h3 className="text-xl font-bold text-[#054752]">
-              {activeTab === 'upcoming' ? 'No upcoming rides published' : 'No past ride history'}
-            </h3>
-            <p className="text-xs text-[#708c91] mt-1 max-w-sm mx-auto">
-              {activeTab === 'upcoming'
-                ? 'You do not have any rides scheduled right now. Publish your route to share fuel costs.'
-                : 'Completed trips will appear here once finished.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsPublishOpen(true)}
-              className="mt-6 py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-all shadow text-sm"
-            >
-              Publish a ride now
-            </button>
-          </div>
-        ) : (
-          /* List of Rides */
+        {/* ======================================================== */}
+        {/* MODE 1: DRIVER OFFERED RIDES                             */}
+        {/* ======================================================== */}
+        {mode === 'driver' && (
           <div className="space-y-6">
-            {displayedRides.map(ride => {
-              const depDate = new Date(ride.departure_time);
-              const formattedDate = depDate.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-              });
-              const formattedTime = depDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-              });
-
-              const bookings = ride.bookings || [];
-              const pendingBookings = bookings.filter(b => b.status === 'pending');
-              const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
-              const seatsBookedCount = bookings.reduce(
-                (sum, b) => (b.status === 'confirmed' ? sum + Number(b.seats_reserved) : sum),
-                0
-              );
-
-              return (
-                <div
-                  key={ride.id}
-                  className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md"
-                >
-                  {/* Ride Card Header */}
-                  <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-[#708c91]">
-                        <span className="text-[#00aff5] font-bold uppercase">{formattedDate}</span>
-                        <span>•</span>
-                        <span>Departure {formattedTime}</span>
-                        {ride.instant_booking && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                            ⚡ Instant Booking
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-xl font-black text-[#054752] mt-1.5">
-                        <span>{ride.departure_city}</span>
-                        <span className="text-[#00aff5]">➔</span>
-                        <span>{ride.arrival_city}</span>
-                      </div>
-
-                      <p className="text-xs text-[#708c91] mt-0.5">
-                        From: {ride.departure_location_name} | To: {ride.arrival_location_name}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-[#054752]">
-                          ₹{Number(ride.price_amount).toFixed(2)}
-                        </div>
-                        <div className="text-xs text-[#708c91]">per passenger</div>
-                      </div>
-
-                      <div className="text-right border-l border-gray-100 pl-6">
-                        <div className="text-sm font-bold text-[#054752]">
-                          {seatsBookedCount} / {ride.total_seats}
-                        </div>
-                        <div className="text-xs text-emerald-600 font-semibold">
-                          {ride.available_seats} seat{ride.available_seats === 1 ? '' : 's'} left
-                        </div>
-                      </div>
-
-                      <a
-                        href={`/trip/${ride.multimodal_id || ride.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-[#00aff5] hover:bg-cyan-50 rounded-full transition-colors"
-                        title="View public ride page"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
+            {/* Informational banner if signed in user has 0 published driver rides */}
+            {user && rides.length === 0 && !isLoading && (
+              <div className="bg-cyan-50 border border-cyan-200 rounded-3xl p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-[#054752] text-base flex items-center gap-2">
+                      <span>👋</span>
+                      <span>Signed in as {user.name}</span>
+                    </h3>
+                    <p className="text-xs text-[#708c91] mt-1 leading-relaxed">
+                      You haven&apos;t published any rides with this account yet. If you created a ride from your Driver account, switch to <strong>&quot;Explore All Community Rides&quot;</strong> or search your route to view and book it!
+                    </p>
                   </div>
-
-                  {/* Waypoints Bar if any */}
-                  {ride.waypoints && ride.waypoints.length > 0 && (
-                    <div className="px-6 py-2.5 bg-slate-50 border-b border-gray-100 text-xs text-[#708c91] flex items-center gap-2">
-                      <span className="font-bold text-[#054752]">Stopovers:</span>
-                      <span>{ride.waypoints.map(wp => wp.location_name).join(' → ')}</span>
-                    </div>
-                  )}
-
-                  {/* Passenger Bookings Section */}
-                  <div className="p-6 space-y-4">
-                    <h4 className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
-                      Passenger Reservations ({bookings.length})
-                    </h4>
-
-                    {bookings.length === 0 ? (
-                      <p className="text-xs text-[#708c91] italic">
-                        No passengers have booked this ride yet. Seats are available to travelers searching this route.
-                      </p>
-                    ) : (
-                      <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
-                        {bookings.map((b: DriverRideBooking) => (
-                          <div
-                            key={b.id}
-                            className="p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              {b.passenger?.avatar_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={b.passenger.avatar_url}
-                                  alt={b.passenger.name}
-                                  className="w-10 h-10 rounded-full object-cover bg-slate-100"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-slate-200 text-[#054752] font-bold flex items-center justify-center text-sm">
-                                  {b.passenger?.name ? b.passenger.name[0] : 'P'}
-                                </div>
-                              )}
-
-                              <div>
-                                <div className="text-sm font-bold text-[#054752] flex items-center gap-2">
-                                  <span>{b.passenger?.name || 'Passenger'}</span>
-                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-[#708c91]">
-                                    {b.seats_reserved} seat{b.seats_reserved > 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-[#708c91] mt-0.5">
-                                  {b.passenger?.phone || b.passenger?.email || 'Verified user'} • ₹{Number(b.total_price).toFixed(2)} ({b.payment_method})
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                              {/* Status Badge */}
-                              <span
-                                className={`text-xs font-bold px-3 py-1 rounded-full ${
-                                  b.status === 'confirmed'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : b.status === 'pending'
-                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    : 'bg-red-50 text-red-600 border border-red-200'
-                                }`}
-                              >
-                                {b.status.toUpperCase()}
-                              </span>
-
-                              {/* Action buttons for pending requests */}
-                              {b.status === 'pending' && (
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBookingAction(b.id, 'confirmed')}
-                                    disabled={actionLoadingId === b.id}
-                                    className="px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"
-                                  >
-                                    Accept
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBookingAction(b.id, 'cancelled')}
-                                    disabled={actionLoadingId === b.id}
-                                    className="px-3 py-1 rounded-full border border-red-300 text-red-600 hover:bg-red-50 font-bold text-xs transition-colors"
-                                  >
-                                    Decline
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setMode('all')}
+                      className="px-4 py-2.5 rounded-full bg-[#00aff5] text-white text-xs font-bold hover:bg-[#008ecc] transition shadow-sm cursor-pointer"
+                    >
+                      Browse All Offered Rides ({allCommunityRides.length})
+                    </button>
+                    <Link
+                      href="/search"
+                      className="px-4 py-2.5 rounded-full bg-white border border-gray-200 text-[#054752] text-xs font-bold hover:bg-slate-50 transition"
+                    >
+                      Search
+                    </Link>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
+                  Total Rides Published
+                </div>
+                <div className="text-3xl font-black text-[#054752] mt-2">
+                  {totalRidesCount}
+                </div>
+                <div className="text-xs text-[#708c91] mt-1">
+                  {upcomingRides.length} active scheduled
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
+                  Passengers Transported
+                </div>
+                <div className="text-3xl font-black text-[#054752] mt-2">
+                  {totalBookings}
+                </div>
+                <div className="text-xs text-emerald-600 font-semibold mt-1">
+                  Confirmed community bookings
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                <div className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
+                  Total Travel Earnings
+                </div>
+                <div className="text-3xl font-black text-emerald-600 mt-2">
+                  ₹{totalEarnings.toFixed(2)}
+                </div>
+                <div className="text-xs text-[#708c91] mt-1">
+                  Cash & digital cost sharing
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-tabs: Upcoming vs Past */}
+            <div className="flex items-center gap-2 border-b border-gray-200">
+              <button
+                type="button"
+                onClick={() => setActiveTab('upcoming')}
+                className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors cursor-pointer ${
+                  activeTab === 'upcoming'
+                    ? 'border-[#00aff5] text-[#00aff5]'
+                    : 'border-transparent text-[#708c91] hover:text-[#054752]'
+                }`}
+              >
+                Upcoming Rides ({upcomingRides.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('past')}
+                className={`pb-3 px-4 font-bold text-sm border-b-2 transition-colors cursor-pointer ${
+                  activeTab === 'past'
+                    ? 'border-[#00aff5] text-[#00aff5]'
+                    : 'border-transparent text-[#708c91] hover:text-[#054752]'
+                }`}
+              >
+                Past Rides ({pastRides.length})
+              </button>
+            </div>
+
+            {/* Driver Rides List */}
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2].map(n => (
+                  <div key={n} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse h-40" />
+                ))}
+              </div>
+            ) : displayedRides.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-cyan-50 text-[#00aff5] flex items-center justify-center text-3xl mx-auto mb-4">
+                  🚗
+                </div>
+                <h3 className="text-lg font-bold text-[#054752]">No {activeTab} rides published by this account</h3>
+                <p className="text-sm text-[#708c91] max-w-md mx-auto mt-1 mb-6">
+                  Ready to offer a ride? Share your empty seats, split fuel costs, and travel comfortably with verified passengers.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsPublishOpen(true)}
+                    className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-colors shadow text-sm cursor-pointer"
+                  >
+                    Offer a ride now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('all')}
+                    className="py-3 px-6 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition-colors text-sm cursor-pointer"
+                  >
+                    Browse Community Rides
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {displayedRides.map(ride => {
+                  const depDate = new Date(ride.departure_time);
+                  const arrDate = new Date(ride.arrival_time);
+                  const bookings = ride.bookings || [];
+
+                  return (
+                    <div
+                      key={ride.id}
+                      className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold text-[#00aff5] uppercase tracking-wider">
+                            {depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </div>
+
+                          <div className="text-xl font-black text-[#054752] flex items-center gap-2">
+                            <span>{ride.departure_city}</span>
+                            <span className="text-[#00aff5]">➔</span>
+                            <span>{ride.arrival_city}</span>
+                          </div>
+
+                          <div className="text-xs text-[#708c91]">
+                            {depDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.departure_location_name}) — {arrDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.arrival_location_name})
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-2xl font-black text-[#054752]">
+                              ₹{ride.price_amount}
+                            </div>
+                            <div className="text-xs font-semibold text-emerald-600">
+                              {ride.available_seats} seat{ride.available_seats === 1 ? '' : 's'} left
+                            </div>
+                          </div>
+
+                          <Link
+                            href={`/trip/${ride.multimodal_id || ride.id}`}
+                            className="p-2.5 text-[#00aff5] hover:bg-cyan-50 rounded-full transition-colors border border-cyan-100"
+                            title="View public ride page"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Waypoints */}
+                      {ride.waypoints && ride.waypoints.length > 0 && (
+                        <div className="px-6 py-2.5 bg-slate-50 border-b border-gray-100 text-xs text-[#708c91] flex items-center gap-2">
+                          <span className="font-bold text-[#054752]">Stopovers:</span>
+                          <span>{ride.waypoints.map(wp => wp.location_name).join(' → ')}</span>
+                        </div>
+                      )}
+
+                      {/* Passenger Bookings Section */}
+                      <div className="p-6 space-y-4">
+                        <h4 className="text-xs font-bold text-[#708c91] uppercase tracking-wider">
+                          Passenger Reservations ({bookings.length})
+                        </h4>
+
+                        {bookings.length === 0 ? (
+                          <p className="text-xs text-[#708c91] italic">
+                            No passengers have reserved seats on this ride yet. Travelers searching this route can book now.
+                          </p>
+                        ) : (
+                          <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
+                            {bookings.map((b: DriverRideBooking) => (
+                              <div
+                                key={b.id}
+                                className="p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-slate-200 text-[#054752] font-bold flex items-center justify-center text-sm">
+                                    {b.passenger?.name ? b.passenger.name[0] : 'P'}
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-bold text-[#054752] flex items-center gap-2">
+                                      <span>{b.passenger?.name || 'Passenger'}</span>
+                                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-[#708c91]">
+                                        {b.seats_reserved} seat{b.seats_reserved > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-[#708c91] mt-0.5">
+                                      {b.passenger?.email || 'Verified Rider'} • ₹{Number(b.total_price).toFixed(2)} ({b.payment_method})
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                      b.status === 'confirmed'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : b.status === 'pending'
+                                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                        : 'bg-red-50 text-red-600 border border-red-200'
+                                    }`}
+                                  >
+                                    {b.status.toUpperCase()}
+                                  </span>
+
+                                  {b.status === 'pending' && (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleBookingAction(b.id, 'confirmed')}
+                                        disabled={actionLoadingId === b.id}
+                                        className="px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                                      >
+                                        Accept
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleBookingAction(b.id, 'cancelled')}
+                                        disabled={actionLoadingId === b.id}
+                                        className="px-3 py-1 rounded-full border border-red-300 text-red-600 hover:bg-red-50 font-bold text-xs transition-colors cursor-pointer"
+                                      >
+                                        Decline
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODE 2: PASSENGER BOOKED RIDES                           */}
+        {/* ======================================================== */}
+        {mode === 'passenger' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#054752]">My Bookings as a Rider</h2>
+                <p className="text-xs text-[#708c91]">All your reserved carpool journeys across India</p>
+              </div>
+              <Link
+                href="/search"
+                className="py-2.5 px-5 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition text-xs"
+              >
+                + Book Another Ride
+              </Link>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2].map(n => (
+                  <div key={n} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse h-32" />
+                ))}
+              </div>
+            ) : passengerBookings.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-cyan-50 text-[#00aff5] flex items-center justify-center text-3xl mx-auto mb-4">
+                  🎫
+                </div>
+                <h3 className="text-lg font-bold text-[#054752]">No passenger reservations yet</h3>
+                <p className="text-sm text-[#708c91] max-w-md mx-auto mt-1 mb-6">
+                  Browse rides published by verified drivers, reserve your seat in seconds, and travel comfortably.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMode('all')}
+                    className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-colors shadow text-sm cursor-pointer"
+                  >
+                    Browse Offered Rides ({allCommunityRides.length})
+                  </button>
+                  <Link
+                    href="/search"
+                    className="py-3 px-6 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition-colors text-sm"
+                  >
+                    Search Rides
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {passengerBookings.map(b => {
+                  const ride = b.rides;
+                  const depDate = ride?.departure_time ? new Date(ride.departure_time) : new Date();
+
+                  return (
+                    <div
+                      key={b.id}
+                      className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                            b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            {b.status.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-[#708c91]">
+                            {depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+
+                        <div className="text-xl font-black text-[#054752] flex items-center gap-2">
+                          <span>{ride?.departure_city || 'Origin'}</span>
+                          <span className="text-[#00aff5]">➔</span>
+                          <span>{ride?.arrival_city || 'Destination'}</span>
+                        </div>
+
+                        <div className="text-xs text-[#708c91]">
+                          Driver: <strong className="text-[#054752]">{ride?.driver?.name || 'Verified Driver'}</strong> • {b.seats_reserved} seat{b.seats_reserved > 1 ? 's' : ''} reserved
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-2xl font-black text-[#054752]">
+                            ₹{b.total_price}
+                          </div>
+                          <div className="text-xs text-[#708c91]">
+                            Payment: {b.payment_method}
+                          </div>
+                        </div>
+
+                        {ride?.id && (
+                          <Link
+                            href={`/trip/${ride.id}`}
+                            className="py-2.5 px-5 rounded-full font-bold text-xs bg-[#00aff5] text-white hover:bg-[#008ecc] transition shadow-sm"
+                          >
+                            View Itinerary
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODE 3: ALL COMMUNITY RIDES (EXPLORE & BOOK)             */}
+        {/* ======================================================== */}
+        {mode === 'all' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#054752]">All Active Community Rides ({allCommunityRides.length})</h2>
+                <p className="text-xs text-[#708c91]">Rides published by drivers and available for any rider to book</p>
+              </div>
+
+              <Link
+                href="/search"
+                className="py-2 px-4 rounded-full font-bold text-[#00aff5] bg-cyan-50 hover:bg-cyan-100 text-xs transition flex items-center gap-1.5 self-start"
+              >
+                <span>🔍</span>
+                <span>Open Advanced Filter Search</span>
+              </Link>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(n => (
+                  <div key={n} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm animate-pulse h-36" />
+                ))}
+              </div>
+            ) : allCommunityRides.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                <p className="text-sm text-[#708c91]">No community rides currently active.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allCommunityRides.map(ride => {
+                  const depDate = new Date(ride.departure_time);
+                  const arrDate = new Date(ride.arrival_time);
+
+                  return (
+                    <div
+                      key={ride.id}
+                      className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-50 text-[#00aff5]">
+                            {depDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </span>
+                          <span className="text-lg font-black text-[#054752]">
+                            ₹{ride.price_amount}
+                          </span>
+                        </div>
+
+                        <div className="text-lg font-extrabold text-[#054752] flex items-center gap-2">
+                          <span>{ride.departure_city}</span>
+                          <span className="text-[#00aff5]">➔</span>
+                          <span>{ride.arrival_city}</span>
+                        </div>
+
+                        <div className="text-xs text-[#708c91] space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span>🕒</span>
+                            <span>Departs at {depDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.departure_location_name})</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span>📍</span>
+                            <span>Arrives ~{arrDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} ({ride.arrival_location_name})</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[#054752]">{ride.driver?.name || 'Driver'}</span>
+                            <span className="text-amber-500 font-bold">★ {ride.driver?.rating || 4.9}</span>
+                          </div>
+                          <span className="font-bold text-emerald-600">
+                            {ride.available_seats} seat{ride.available_seats === 1 ? '' : 's'} available
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-3 border-t border-gray-50 flex items-center justify-between gap-3">
+                        <span className="text-xs text-[#708c91] truncate">
+                          {ride.vehicle?.make} {ride.vehicle?.model}
+                        </span>
+
+                        <Link
+                          href={`/trip/${ride.multimodal_id || ride.id}`}
+                          className="py-2 px-5 rounded-full font-bold text-xs bg-[#00aff5] text-white hover:bg-[#008ecc] transition shadow-sm"
+                        >
+                          View & Book
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -519,4 +772,3 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
 };
 
 export default DriverDashboard;
-

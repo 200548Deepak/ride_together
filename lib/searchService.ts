@@ -9,6 +9,7 @@ import {
   FacetGroup,
 } from '../types/blablacar-search';
 import { randomUUID } from 'crypto';
+import { getAllSharedRides, PublishedRide } from './ridesStore';
 
 interface RawRideRecord {
   ride_id: string;
@@ -192,12 +193,76 @@ function parseBooleanParam(val: unknown): boolean {
   return false;
 }
 
+function publishedRideToRaw(r: PublishedRide): RawRideRecord {
+  const depTime = new Date(r.departure_time);
+  const arrTime = new Date(r.arrival_time);
+  const durationMinutes = Math.max(30, Math.round((arrTime.getTime() - depTime.getTime()) / (60 * 1000)));
+
+  return {
+    ride_id: r.id,
+    multimodal_id: r.multimodal_id,
+    driver_id: r.driver_id,
+    driver_name: r.driver?.name || 'Driver ANISH',
+    driver_avatar: r.driver?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    driver_is_verified: r.driver?.is_verified ?? true,
+    driver_rating: r.driver?.rating || 4.95,
+    vehicle_make: r.vehicle?.make || 'Hyundai',
+    vehicle_model: r.vehicle?.model || 'Creta',
+    departure_city: r.departure_city,
+    departure_location_name: r.departure_location_name,
+    departure_lat: r.departure_lat,
+    departure_lon: r.departure_lon,
+    departure_time: r.departure_time,
+    arrival_city: r.arrival_city,
+    arrival_location_name: r.arrival_location_name,
+    arrival_lat: r.arrival_lat,
+    arrival_lon: r.arrival_lon,
+    arrival_time: r.arrival_time,
+    duration_minutes: durationMinutes,
+    is_overnight: arrTime.getDate() !== depTime.getDate(),
+    available_seats: r.available_seats,
+    price_amount: r.price_amount,
+    currency: r.currency || 'INR',
+    instant_booking: r.instant_booking,
+    two_max_back: r.two_max_back,
+    air_conditioning: r.air_conditioning,
+    power_outlets: r.power_outlets,
+    smoking_allowed: r.smoking_allowed,
+    pets_allowed: r.pets_allowed,
+  };
+}
+
+function cityMatches(queryCity: string, rideCity: string): boolean {
+  if (!queryCity) return true;
+  const q = queryCity.trim().toLowerCase();
+  const c = rideCity.trim().toLowerCase();
+  if (c.includes(q) || q.includes(c)) return true;
+
+  const aliases: Record<string, string[]> = {
+    bengaluru: ['bangalore', 'bengaluru', 'blr'],
+    mysuru: ['mysore', 'mysuru'],
+    chennai: ['madras', 'chennai'],
+    mumbai: ['bombay', 'mumbai'],
+    delhi: ['new delhi', 'delhi', 'ncr'],
+    pune: ['poona', 'pune'],
+    hyderabad: ['hyderabad', 'secunderabad'],
+  };
+
+  for (const group of Object.values(aliases)) {
+    const qMatches = group.some(alias => q.includes(alias));
+    const cMatches = group.some(alias => c.includes(alias));
+    if (qMatches && cMatches) return true;
+  }
+
+  return false;
+}
+
 export async function executeSearch(params: SearchQueryRequest): Promise<BlaBlaCarSearchResponse> {
   const searchUuid = randomUUID();
 
   // Extract query filters
-  const departureCity = (params.fn || 'Bengaluru').split(',')[0].trim();
-  const arrivalCity = (params.tn || 'Mysuru').split(',')[0].trim();
+  const departureCity = (params.fn || '').split(',')[0].trim();
+  const arrivalCity = (params.tn || '').split(',')[0].trim();
   const requestedDate = params.db || params.departure_date || new Date().toISOString().split('T')[0];
   const seats = Number(params.seats || params.requested_seats || 1);
   const sort = params.sort || 'dep_time:asc';
@@ -210,67 +275,124 @@ export async function executeSearch(params: SearchQueryRequest): Promise<BlaBlaC
   const filterSmokers = parseBooleanParam(params.smokers);
   const filterPets = parseBooleanParam(params.pets);
 
-  let rawRides: RawRideRecord[] = [];
+  // 1. Gather all published rides from the shared store (includes all driver-created rides!)
+  const sharedRidesRaw = getAllSharedRides().map(publishedRideToRaw);
 
-  // Try Supabase connection if configured
+  // 2. Combine with seed mock rides
+  const allPool: RawRideRecord[] = [...sharedRidesRaw];
+  for (const seed of MOCK_RIDES) {
+    if (!allPool.some(r => r.ride_id === seed.ride_id || r.multimodal_id === seed.multimodal_id)) {
+      allPool.push(seed);
+    }
+  }
+
+  // 3. Try querying Supabase directly if configured
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (supabaseUrl && supabaseKey) {
+  if (supabaseUrl && supabaseKey && !supabaseUrl.includes('placeholder')) {
     try {
       const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      const { data, error } = await supabase.rpc('search_rides', {
-        p_departure_city: departureCity,
-        p_arrival_city: arrivalCity,
-        p_departure_date: requestedDate,
-        p_seats: seats,
-        p_from_lat: params.from_lat ?? null,
-        p_from_lon: params.from_lng ?? null,
-        p_to_lat: params.to_lat ?? null,
-        p_to_lon: params.to_lng ?? null,
-        p_sort: sort,
-        p_verified_only: filterVerified,
-        p_auto_approve: filterAutoApprove,
-        p_two_max_back: filterTwoMaxBack,
-        p_ac: filterAc,
-        p_power: filterPower,
-        p_smokers: filterSmokers,
-        p_pets: filterPets,
-      });
+      // Try direct select first
+      const { data: dbRides } = await supabase
+        .from('rides')
+        .select(`
+          *,
+          driver:driver_id (
+            id,
+            name,
+            avatar_url,
+            rating,
+            is_verified
+          ),
+          vehicle:vehicle_id (
+            make,
+            model
+          )
+        `)
+        .order('departure_time', { ascending: true });
 
-      if (!error && Array.isArray(data)) {
-        rawRides = data;
+      if (dbRides && dbRides.length > 0) {
+        for (const dr of dbRides) {
+          const depTime = new Date(dr.departure_time);
+          const arrTime = new Date(dr.arrival_time);
+          const mapped: RawRideRecord = {
+            ride_id: dr.id,
+            multimodal_id: dr.multimodal_id || dr.id,
+            driver_id: dr.driver_id,
+            driver_name: dr.driver?.name || 'Driver',
+            driver_avatar: dr.driver?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            driver_is_verified: dr.driver?.is_verified ?? true,
+            driver_rating: dr.driver?.rating || 4.9,
+            vehicle_make: dr.vehicle?.make || 'Car',
+            vehicle_model: dr.vehicle?.model || 'Sedan',
+            departure_city: dr.departure_city,
+            departure_location_name: dr.departure_location_name,
+            departure_lat: dr.departure_lat || 12.97,
+            departure_lon: dr.departure_lon || 77.59,
+            departure_time: dr.departure_time,
+            arrival_city: dr.arrival_city,
+            arrival_location_name: dr.arrival_location_name,
+            arrival_lat: dr.arrival_lat || 12.29,
+            arrival_lon: dr.arrival_lon || 76.63,
+            arrival_time: dr.arrival_time,
+            duration_minutes: Math.max(30, Math.round((arrTime.getTime() - depTime.getTime()) / (60 * 1000))),
+            is_overnight: arrTime.getDate() !== depTime.getDate(),
+            available_seats: dr.available_seats,
+            price_amount: Number(dr.price_amount) || 450,
+            currency: dr.currency || 'INR',
+            instant_booking: dr.instant_booking ?? true,
+            two_max_back: dr.two_max_back ?? true,
+            air_conditioning: dr.air_conditioning ?? true,
+            power_outlets: dr.power_outlets ?? false,
+            smoking_allowed: dr.smoking_allowed ?? false,
+            pets_allowed: dr.pets_allowed ?? false,
+          };
+
+          if (!allPool.some(p => p.ride_id === mapped.ride_id || p.multimodal_id === mapped.multimodal_id)) {
+            allPool.unshift(mapped);
+          }
+        }
       }
-    } catch {
-      // Supabase RPC failed or package not present; fall back to mock data
-      rawRides = [];
+    } catch (e) {
+      console.warn('Database search check note:', e);
     }
   }
 
-  // Fallback to MOCK_RIDES if database empty or unconfigured
-  if (rawRides.length === 0) {
-    rawRides = MOCK_RIDES.filter(r => {
-      if (r.available_seats < seats) return false;
-      if (filterVerified && !r.driver_is_verified) return false;
-      if (filterAutoApprove && !r.instant_booking) return false;
-      if (filterTwoMaxBack && !r.two_max_back) return false;
-      if (filterAc && !r.air_conditioning) return false;
-      if (filterPower && !r.power_outlets) return false;
-      if (filterSmokers && !r.smoking_allowed) return false;
-      if (filterPets && !r.pets_allowed) return false;
-      return true;
-    });
+  // 4. Match against rider's search route
+  let matchedRides = allPool.filter(r => {
+    const depOk = cityMatches(departureCity, r.departure_city);
+    const arrOk = cityMatches(arrivalCity, r.arrival_city);
+    return depOk && arrOk;
+  });
 
-    // Apply sorting
-    if (sort === 'price:asc') {
-      rawRides.sort((a, b) => a.price_amount - b.price_amount);
-    } else if (sort === 'duration:asc') {
-      rawRides.sort((a, b) => a.duration_minutes - b.duration_minutes);
-    } else {
-      rawRides.sort((a, b) => new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime());
-    }
+  // If strict city match returns 0, return all available pool rides so riders can always explore rides
+  if (matchedRides.length === 0) {
+    matchedRides = allPool;
+  }
+
+  // 5. Apply user filters
+  let rawRides = matchedRides.filter(r => {
+    if (r.available_seats < seats) return false;
+    if (filterVerified && !r.driver_is_verified) return false;
+    if (filterAutoApprove && !r.instant_booking) return false;
+    if (filterTwoMaxBack && !r.two_max_back) return false;
+    if (filterAc && !r.air_conditioning) return false;
+    if (filterPower && !r.power_outlets) return false;
+    if (filterSmokers && !r.smoking_allowed) return false;
+    if (filterPets && !r.pets_allowed) return false;
+    return true;
+  });
+
+  // 6. Apply sorting
+  if (sort === 'price:asc') {
+    rawRides.sort((a, b) => a.price_amount - b.price_amount);
+  } else if (sort === 'duration:asc') {
+    rawRides.sort((a, b) => a.duration_minutes - b.duration_minutes);
+  } else {
+    rawRides.sort((a, b) => new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime());
   }
 
   // Build BlaBlaCar facet counts
@@ -413,9 +535,9 @@ export async function executeSearch(params: SearchQueryRequest): Promise<BlaBlaC
   const summaryHeader: SummaryHeaderItem = {
     type: 'SUMMARY_HEADER',
     id: 'SUMMARY_HEADER_0',
-    date: 'Today',
-    departure: departureCity,
-    arrival: arrivalCity,
+    date: 'Upcoming',
+    departure: departureCity || 'All Locations',
+    arrival: arrivalCity || 'All Destinations',
     numberOfResults: `${rawRides.length} rides available`,
   };
 

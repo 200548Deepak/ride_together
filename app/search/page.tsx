@@ -11,8 +11,8 @@ function SearchResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const fn = searchParams?.get('fn') || 'Bengaluru';
-  const tn = searchParams?.get('tn') || 'Mysuru';
+  const fn = searchParams?.get('fn') ?? '';
+  const tn = searchParams?.get('tn') ?? '';
   const db = searchParams?.get('db') || new Date().toISOString().split('T')[0];
   const seatsParam = searchParams?.get('seats') || '1';
   const seats = parseInt(seatsParam, 10) || 1;
@@ -33,11 +33,11 @@ function SearchResultsContent() {
       setError(null);
 
       const queryParams = new URLSearchParams({
-        fn,
-        tn,
-        db,
         seats: String(seats)
       });
+      if (fn.trim()) queryParams.set('fn', fn.trim());
+      if (tn.trim()) queryParams.set('tn', tn.trim());
+      if (db) queryParams.set('db', db);
 
       const res = await fetch(`/api/search?${queryParams.toString()}`);
       if (!res.ok) {
@@ -58,6 +58,12 @@ function SearchResultsContent() {
     setOriginInput(fn);
     setDestInput(tn);
     setDateInput(db);
+
+    const handleRidePublished = () => {
+      fetchTrips();
+    };
+    window.addEventListener('ride-published', handleRidePublished);
+    return () => window.removeEventListener('ride-published', handleRidePublished);
   }, [fetchTrips, fn, tn, db]);
 
   // Extract raw trips from backend response

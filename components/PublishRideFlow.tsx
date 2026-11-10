@@ -148,8 +148,9 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
     try {
       const depDateTime = new Date(`${departureDate}T${departureTime}:00`);
 
-      const payload: CreateRideRequest = {
+      const payload: CreateRideRequest & { driver_name?: string } = {
         driver_id: currentUser.id,
+        driver_name: currentUser.name || 'Driver',
         departure_city: departureCity,
         departure_location_name: departureLocation || `${departureCity} City Center`,
         departure_time: depDateTime.toISOString(),
@@ -182,6 +183,14 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
       });
 
       const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || 'Failed to publish ride.');
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ride-published', { detail: data.ride }));
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.error?.message || 'Failed to publish ride.');

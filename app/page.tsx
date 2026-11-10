@@ -252,18 +252,45 @@ export default function HomePage() {
                   </div>
 
                   <Link
-                    href="/driver"
+                    href="/driver?mode=driver"
                     onClick={() => setIsUserMenuOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#054752] hover:bg-slate-50 transition-colors"
                   >
                     <span>🚗</span>
-                    <span>Driver Rides & Bookings</span>
+                    <span>Driver Hub (Offered Rides)</span>
+                  </Link>
+
+                  <Link
+                    href="/driver?mode=passenger"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#054752] hover:bg-slate-50 transition-colors"
+                  >
+                    <span>🎫</span>
+                    <span>Rider Hub (My Bookings)</span>
+                  </Link>
+
+                  <Link
+                    href="/driver?mode=all"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#054752] hover:bg-slate-50 transition-colors"
+                  >
+                    <span>🌐</span>
+                    <span>Explore Community Rides</span>
+                  </Link>
+
+                  <Link
+                    href="/search"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#054752] hover:bg-slate-50 transition-colors"
+                  >
+                    <span>🔍</span>
+                    <span>Search All Rides</span>
                   </Link>
 
                   <Link
                     href="/publish"
                     onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#054752] hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#00aff5] hover:bg-cyan-50 transition-colors"
                   >
                     <span>⚡</span>
                     <span>Offer a New Ride</span>
@@ -329,21 +356,35 @@ export default function HomePage() {
             onClick={() => setIsMobileMenuOpen(false)}
             className="block text-sm font-bold text-[#054752] py-2"
           >
-            Search Rides
+            🔍 Search Rides
           </Link>
           <Link
             href="/publish"
             onClick={() => setIsMobileMenuOpen(false)}
             className="block text-sm font-bold text-[#00aff5] py-2"
           >
-            + Offer a Ride
+            ⚡ Offer a Ride
           </Link>
           <Link
-            href="/driver"
+            href="/driver?mode=driver"
             onClick={() => setIsMobileMenuOpen(false)}
             className="block text-sm font-bold text-[#054752] py-2"
           >
-            Driver Dashboard
+            🚗 Driver Hub (Offered Rides)
+          </Link>
+          <Link
+            href="/driver?mode=passenger"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block text-sm font-bold text-[#054752] py-2"
+          >
+            🎫 Rider Hub (My Bookings)
+          </Link>
+          <Link
+            href="/driver?mode=all"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block text-sm font-bold text-[#054752] py-2"
+          >
+            🌐 Explore Community Rides
           </Link>
           <div className="border-t border-gray-100 pt-3">
             {user ? (
