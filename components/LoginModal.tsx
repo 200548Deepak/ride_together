@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { getSupabaseClient, isSupabaseConfigured, saveLocalUser, getLocalUser, AppUser } from '../lib/supabaseClient';
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+  saveLocalUser,
+  getLocalUser,
+  getRegisteredUser,
+  generateDeterministicUserId,
+  AppUser
+} from '../lib/supabaseClient';
 
 export interface LoginModalProps {
   isOpen: boolean;
@@ -49,23 +57,25 @@ export default function LoginModal({
 
     setLoading(true);
 
-    const createSimulatedUser = (): AppUser => ({
-      id: `usr_${Date.now()}`,
-      email: email.trim(),
-      name: email.split('@')[0],
-      user_metadata: {
+    const createSimulatedUser = (): AppUser => {
+      const registered = getRegisteredUser(email);
+      if (registered) return registered;
+
+      return {
+        id: generateDeterministicUserId(email),
+        email: email.trim(),
         name: email.split('@')[0],
-      },
-    });
+        user_metadata: {
+          name: email.split('@')[0],
+        },
+      };
+    };
 
     // 1. Fallback mode if Supabase credentials are not configured in .env.local
     if (!isSupabaseConfigured()) {
       setTimeout(() => {
         setLoading(false);
-        const existingLocal = getLocalUser();
-        const loggedUser = (existingLocal && existingLocal.email?.toLowerCase() === email.trim().toLowerCase())
-          ? existingLocal
-          : createSimulatedUser();
+        const loggedUser = createSimulatedUser();
         saveLocalUser(loggedUser);
         if (onSuccess) onSuccess(loggedUser);
         handleClose();

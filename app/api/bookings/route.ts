@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
 
     const storeResult = bookSharedRide(targetId, {
       passenger_id: passenger_id,
+      passenger_name: body.passenger_name,
+      passenger_email: body.passenger_email,
       seats_reserved: requestedSeats,
       total_price: initialCalcPrice,
       currency,
@@ -309,11 +311,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const trip_id = searchParams.get('trip_id');
     const passenger_id = searchParams.get('passenger_id');
+    const passenger_email = searchParams.get('passenger_email') || undefined;
 
     // 1. Gather bookings from shared store first
     let mappedBookings: any[] = [];
-    if (passenger_id) {
-      const sharedList = getSharedBookingsByPassenger(passenger_id);
+    if (passenger_id || passenger_email) {
+      const sharedList = getSharedBookingsByPassenger(passenger_id || '', passenger_email);
       mappedBookings = sharedList.map(({ booking, ride }) => ({
         id: booking.id,
         trip_id: ride.id,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, getLocalUser, removeLocalUser } from '@/lib/supabaseClient';
 import { DriverRideItem, DriverRideBooking } from '@/types/ride';
 import PublishRideFlow from './PublishRideFlow';
 
@@ -26,7 +26,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
 
   const supabase = getSupabaseClient();
 
-  const fetchDashboardData = useCallback(async (userId?: string) => {
+  const fetchDashboardData = useCallback(async (userId?: string, userEmail?: string) => {
     try {
       setIsLoading(true);
 
@@ -37,16 +37,24 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         setAllCommunityRides(allData.rides || []);
       }
 
-      if (userId) {
+      if (userId || userEmail) {
         // 2. Fetch rides published by this user as driver
-        const res = await fetch(`/api/rides?driver_id=${encodeURIComponent(userId)}`);
+        const rideParams = new URLSearchParams();
+        if (userId) rideParams.set('driver_id', userId);
+        if (userEmail) rideParams.set('driver_email', userEmail);
+        
+        const res = await fetch(`/api/rides?${rideParams.toString()}`);
         const data = await res.json();
         if (res.ok && data.success) {
           setRides(data.rides || []);
         }
 
         // 3. Fetch passenger bookings for this user
-        const bookRes = await fetch(`/api/bookings?passenger_id=${encodeURIComponent(userId)}`);
+        const bookParams = new URLSearchParams();
+        if (userId) bookParams.set('passenger_id', userId);
+        if (userEmail) bookParams.set('passenger_email', userEmail);
+
+        const bookRes = await fetch(`/api/bookings?${bookParams.toString()}`);
         const bookData = await bookRes.json();
         if (bookRes.ok && bookData.success) {
           setPassengerBookings(bookData.bookings || []);
@@ -69,19 +77,26 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
       }
     }
 
+    const loadCurrentUser = () => {
+      const local = getLocalUser();
+      if (local) {
+        const u = {
+          id: local.id,
+          name: local.name || local.email?.split('@')[0] || 'Member',
+          email: local.email
+        };
+        setUser(u);
+        fetchDashboardData(u.id, u.email);
+        return u;
+      } else {
+        setUser(null);
+        fetchDashboardData();
+        return null;
+      }
+    };
+
     // 1. Check local session
-    const local = getLocalUser();
-    if (local) {
-      const u = {
-        id: local.id,
-        name: local.name || local.email?.split('@')[0] || 'Member',
-        email: local.email
-      };
-      setUser(u);
-      fetchDashboardData(u.id);
-    } else {
-      fetchDashboardData();
-    }
+    loadCurrentUser();
 
     // 2. Query Supabase auth if configured
     if (isSupabaseConfigured()) {
@@ -93,18 +108,29 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
             email: data.user.email
           };
           setUser(u);
-          fetchDashboardData(u.id);
+          fetchDashboardData(u.id, u.email);
         }
       }).catch(() => {});
     }
 
-    // 3. Listen for dynamic ride publication
+    // 3. Listen for dynamic ride publication and authentication state changes
     const handleRidePublished = () => {
-      fetchDashboardData(user?.id);
+      const local = getLocalUser();
+      fetchDashboardData(local?.id, local?.email);
     };
+
+    const handleAuthChange = () => {
+      loadCurrentUser();
+    };
+
     window.addEventListener('ride-published', handleRidePublished);
-    return () => window.removeEventListener('ride-published', handleRidePublished);
-  }, [fetchDashboardData, supabase.auth, user?.id]);
+    window.addEventListener('auth-change', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('ride-published', handleRidePublished);
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, [fetchDashboardData, supabase.auth]);
 
   const handleBookingAction = async (bookingId: string, status: 'confirmed' | 'cancelled') => {
     setActionLoadingId(bookingId);
@@ -125,7 +151,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
 
       setFeedbackMessage(`Booking has been ${status === 'confirmed' ? 'accepted' : 'declined'}.`);
       if (user) {
-        fetchDashboardData(user.id);
+        fetchDashboardData(user.id, user.email);
       }
     } catch (err: unknown) {
       setFeedbackMessage(err instanceof Error ? err.message : 'Error updating booking');
@@ -155,7 +181,9 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         <PublishRideFlow
           onSuccess={() => {
             setIsPublishOpen(false);
-            if (user) fetchDashboardData(user.id);
+            const activeUser = getLocalUser();
+            if (activeUser) fetchDashboardData(activeUser.id, activeUser.email);
+            else fetchDashboardData();
           }}
           onCancel={() => setIsPublishOpen(false)}
           onOpenLogin={onOpenLogin}
@@ -183,10 +211,18 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Link
+              href="/"
+              className="py-2.5 px-4 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition text-sm flex items-center gap-1.5"
+            >
+              <span>🏠</span>
+              <span>Home</span>
+            </Link>
+
             <Link
               href="/search"
-              className="py-3 px-5 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition text-sm flex items-center gap-2"
+              className="py-2.5 px-4 rounded-full font-bold text-[#054752] bg-slate-100 hover:bg-slate-200 transition text-sm flex items-center gap-1.5"
             >
               <span>🔍</span>
               <span>Find Rides</span>
@@ -195,11 +231,37 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
             <button
               type="button"
               onClick={() => setIsPublishOpen(true)}
-              className="py-3 px-6 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm cursor-pointer"
+              className="py-2.5 px-5 rounded-full font-bold text-white bg-[#00aff5] hover:bg-[#0098d6] transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 text-sm cursor-pointer"
             >
               <span className="text-lg leading-none">+</span>
               <span>Offer a Ride</span>
             </button>
+
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  removeLocalUser();
+                  if (isSupabaseConfigured()) {
+                    supabase.auth.signOut().catch(() => {});
+                  }
+                  setUser(null);
+                  fetchDashboardData();
+                }}
+                className="py-2 px-3.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 transition cursor-pointer"
+                title="Sign out of current account"
+              >
+                Sign out
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                className="py-2 px-3.5 rounded-full text-xs font-bold text-[#00aff5] hover:bg-cyan-50 border border-[#00aff5] transition cursor-pointer"
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </div>
 

@@ -7,6 +7,8 @@ export interface BookingRequest {
   trip_id?: string;
   multimodal_id?: string;
   passenger_id?: string;
+  passenger_name?: string;
+  passenger_email?: string;
   seats_reserved: number;
   total_price: number;
   currency?: string;

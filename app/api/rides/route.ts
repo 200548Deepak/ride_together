@@ -40,7 +40,7 @@ function getCityCoords(city: string) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = getSupabaseClient();
-    const body: CreateRideRequest & { driver_name?: string } = await req.json();
+    const body: CreateRideRequest = await req.json();
 
     let driverId = body.driver_id;
 
@@ -54,6 +54,10 @@ export async function POST(req: NextRequest) {
           driverId = user.id;
         }
       }
+    }
+
+    if (!driverId && body.driver_email) {
+      driverId = `usr_${body.driver_email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
     }
 
     if (!driverId) {
@@ -150,6 +154,7 @@ export async function POST(req: NextRequest) {
       driver: {
         id: driverId,
         name: body.driver_name || 'Driver ANISH',
+        email: body.driver_email || undefined,
         avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
         rating: 4.95,
         ratings_count: 24,
@@ -247,10 +252,11 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const driverId = searchParams.get('driver_id');
+    const driverEmail = searchParams.get('driver_email') || undefined;
     const all = searchParams.get('all') === 'true';
 
-    // If all=true or no specific driverId, return all shared active rides
-    if (all || !driverId) {
+    // If all=true or neither driverId nor driverEmail provided, return all shared active rides
+    if (all || (!driverId && !driverEmail)) {
       const allRides = getAllSharedRides();
       return NextResponse.json({
         success: true,
@@ -259,7 +265,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    let rides = getSharedRidesByDriver(driverId);
+    let rides = getSharedRidesByDriver(driverId || '', driverEmail);
 
     // If no rides found in memory for this driver ID, check Supabase if configured
     if (rides.length === 0 && isSupabaseConfigured()) {

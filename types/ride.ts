@@ -1,5 +1,7 @@
 export interface CreateRideRequest {
   driver_id?: string;
+  driver_name?: string;
+  driver_email?: string;
   vehicle_id?: string;
   vehicle_make?: string;
   vehicle_model?: string;
@@ -91,6 +93,7 @@ export interface DriverRideItem {
   driver?: {
     id?: string;
     name: string;
+    email?: string;
     avatar_url?: string;
     rating?: number;
     is_verified?: boolean;

@@ -103,6 +103,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           trip_id: ride.id,
           multimodal_id: ride.multimodalId.id,
           passenger_id: user.id,
+          passenger_name: user.name || user.email?.split('@')[0] || 'Passenger',
+          passenger_email: user.email || undefined,
           seats_reserved: seats,
           total_price: totalPrice,
           currency: ride.totalPrice.currency || 'INR',

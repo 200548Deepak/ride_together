@@ -1,4 +1,5 @@
-import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
+import fs from 'fs';
+import path from 'path';
 import crypto from 'crypto';
 
 export interface PublishedRide {
@@ -79,6 +80,37 @@ declare global {
   var __RIDE_TOGETHER_STORE__: PublishedRide[] | undefined;
 }
 
+const DATA_DIR = path.join(process.cwd(), 'data');
+const RIDES_FILE = path.join(DATA_DIR, 'rides.json');
+
+function loadRidesFromDisk(): PublishedRide[] | null {
+  try {
+    if (fs.existsSync(RIDES_FILE)) {
+      const content = fs.readFileSync(RIDES_FILE, 'utf-8');
+      const data = JSON.parse(content);
+      if (Array.isArray(data) && data.length > 0) {
+        const idSet = new Set(data.map((r: any) => r.id));
+        const missingSeeds = INITIAL_SEED_RIDES.filter(s => !idSet.has(s.id));
+        return [...data, ...missingSeeds];
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read rides from disk cache:', err);
+  }
+  return null;
+}
+
+function saveRidesToDisk(rides: PublishedRide[]): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(RIDES_FILE, JSON.stringify(rides, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not save rides to disk cache:', err);
+  }
+}
+
 const INITIAL_SEED_RIDES: PublishedRide[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
@@ -109,6 +141,7 @@ const INITIAL_SEED_RIDES: PublishedRide[] = [
     driver: {
       id: 'd1111111-1111-1111-1111-111111111111',
       name: 'Karthik',
+      email: 'karthik@example.com',
       avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
       rating: 4.9,
       ratings_count: 28,
@@ -152,6 +185,7 @@ const INITIAL_SEED_RIDES: PublishedRide[] = [
     driver: {
       id: 'd2222222-2222-2222-2222-222222222222',
       name: 'Arjun',
+      email: 'arjun@example.com',
       avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&h=150&q=80',
       rating: 4.7,
       ratings_count: 15,
@@ -195,6 +229,7 @@ const INITIAL_SEED_RIDES: PublishedRide[] = [
     driver: {
       id: 'd3333333-3333-3333-3333-333333333333',
       name: 'Rohit',
+      email: 'rohit@example.com',
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80',
       rating: 4.85,
       ratings_count: 32,
@@ -212,7 +247,8 @@ const INITIAL_SEED_RIDES: PublishedRide[] = [
 ];
 
 if (!global.__RIDE_TOGETHER_STORE__) {
-  global.__RIDE_TOGETHER_STORE__ = [...INITIAL_SEED_RIDES];
+  const fromDisk = loadRidesFromDisk();
+  global.__RIDE_TOGETHER_STORE__ = fromDisk || [...INITIAL_SEED_RIDES];
 }
 
 /**
@@ -220,7 +256,8 @@ if (!global.__RIDE_TOGETHER_STORE__) {
  */
 export function getAllSharedRides(): PublishedRide[] {
   if (!global.__RIDE_TOGETHER_STORE__) {
-    global.__RIDE_TOGETHER_STORE__ = [...INITIAL_SEED_RIDES];
+    const fromDisk = loadRidesFromDisk();
+    global.__RIDE_TOGETHER_STORE__ = fromDisk || [...INITIAL_SEED_RIDES];
   }
   return global.__RIDE_TOGETHER_STORE__;
 }
@@ -230,13 +267,14 @@ export function getAllSharedRides(): PublishedRide[] {
  */
 export function addSharedRide(ride: PublishedRide): PublishedRide {
   const store = getAllSharedRides();
-  // Check if ride already exists
   const existingIdx = store.findIndex(r => r.id === ride.id || r.multimodal_id === ride.multimodal_id);
   if (existingIdx >= 0) {
     store[existingIdx] = { ...store[existingIdx], ...ride };
+    saveRidesToDisk(store);
     return store[existingIdx];
   } else {
     store.unshift(ride);
+    saveRidesToDisk(store);
     return ride;
   }
 }
@@ -250,26 +288,77 @@ export function getSharedRideById(id: string): PublishedRide | undefined {
 }
 
 /**
- * Get rides created by a specific driver ID
+ * Get rides created by a specific driver ID or email
  */
-export function getSharedRidesByDriver(driverId: string): PublishedRide[] {
+export function getSharedRidesByDriver(driverId: string, driverEmail?: string): PublishedRide[] {
   const store = getAllSharedRides();
-  return store.filter(r => r.driver_id === driverId);
+  const normalizedEmail = driverEmail?.trim().toLowerCase();
+  const normalizedId = driverId?.trim().toLowerCase();
+
+  return store.filter(r => {
+    // 1. Direct match on driver_id
+    if (r.driver_id && r.driver_id === driverId) return true;
+
+    // 2. Case-insensitive match on driver_id
+    if (r.driver_id && r.driver_id.toLowerCase() === normalizedId) return true;
+
+    // 3. Match on driver's registered email
+    if (normalizedEmail && r.driver?.email && r.driver.email.trim().toLowerCase() === normalizedEmail) {
+      return true;
+    }
+
+    // 4. Match if driver_id was generated from email (e.g. usr_driver_abc_com)
+    if (normalizedEmail) {
+      const derivedId = `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`;
+      if (r.driver_id === derivedId) return true;
+      if (r.driver_id.toLowerCase().includes(normalizedEmail.split('@')[0])) return true;
+    }
+
+    // 5. Match if driverId contains part of the email
+    if (normalizedEmail && normalizedId && normalizedId.includes(normalizedEmail.split('@')[0])) {
+      return true;
+    }
+
+    return false;
+  });
 }
 
 /**
  * Get all passenger bookings for a specific rider/passenger
  */
-export function getSharedBookingsByPassenger(passengerId: string) {
+export function getSharedBookingsByPassenger(passengerId: string, passengerEmail?: string) {
   const store = getAllSharedRides();
   const bookings: Array<{
     booking: PublishedRide['bookings'][0];
     ride: PublishedRide;
   }> = [];
 
+  const normalizedEmail = passengerEmail?.trim().toLowerCase();
+  const normalizedId = passengerId?.trim().toLowerCase();
+
   for (const ride of store) {
     for (const b of ride.bookings) {
-      if (b.passenger_id === passengerId) {
+      let isMatch = false;
+
+      // 1. Direct match on passenger_id
+      if (b.passenger_id === passengerId) isMatch = true;
+
+      // 2. Case-insensitive match on passenger_id
+      if (b.passenger_id && b.passenger_id.toLowerCase() === normalizedId) isMatch = true;
+
+      // 3. Match on registered passenger email
+      if (normalizedEmail && b.passenger?.email && b.passenger.email.trim().toLowerCase() === normalizedEmail) {
+        isMatch = true;
+      }
+
+      // 4. Match if passenger_id was generated from email (e.g. usr_rider_abc_com)
+      if (normalizedEmail) {
+        const derivedId = `usr_${normalizedEmail.replace(/[^a-z0-9]/g, '_')}`;
+        if (b.passenger_id === derivedId) isMatch = true;
+        if (b.passenger_id.toLowerCase().includes(normalizedEmail.split('@')[0])) isMatch = true;
+      }
+
+      if (isMatch) {
         bookings.push({ booking: b, ride });
       }
     }
@@ -328,6 +417,9 @@ export function bookSharedRide(
   ride.available_seats = Math.max(0, ride.available_seats - bookingData.seats_reserved);
   ride.bookings.unshift(newBooking);
 
+  const store = getAllSharedRides();
+  saveRidesToDisk(store);
+
   return { success: true, booking: newBooking };
 }
 
@@ -350,6 +442,7 @@ export function updateSharedBookingStatus(
       } else if (prevStatus === 'pending' && status === 'confirmed') {
         // Seats already deducted upon reservation request
       }
+      saveRidesToDisk(store);
       return true;
     }
   }

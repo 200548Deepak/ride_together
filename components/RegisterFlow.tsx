@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { getSupabaseClient, isSupabaseConfigured, saveLocalUser, AppUser } from '../lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, saveLocalUser, generateDeterministicUserId, AppUser } from '../lib/supabaseClient';
 
 export interface RegisterFlowProps {
   isOpen: boolean;
@@ -148,7 +148,7 @@ export default function RegisterFlow({
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
     const createSimulatedUser = (): AppUser => ({
-      id: `usr_${Date.now()}`,
+      id: generateDeterministicUserId(email),
       email: email.trim(),
       name: fullName,
       first_name: firstName.trim(),

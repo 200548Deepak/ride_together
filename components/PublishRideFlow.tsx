@@ -64,7 +64,7 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [publishedRide, setPublishedRide] = useState<any | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ id: string; name?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name?: string; email?: string } | null>(null);
 
   useEffect(() => {
     // 1. Initial hydration from local demo storage
@@ -72,7 +72,8 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
     if (local) {
       setCurrentUser({
         id: local.id,
-        name: local.name || local.email?.split('@')[0] || 'Driver'
+        name: local.name || local.email?.split('@')[0] || 'Driver',
+        email: local.email
       });
     }
 
@@ -83,11 +84,26 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
         if (data?.user) {
           setCurrentUser({
             id: data.user.id,
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver'
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver',
+            email: data.user.email
           });
         }
       }).catch(() => {});
     }
+
+    // 3. Update if user logs in during the flow
+    const handleAuthChange = () => {
+      const updated = getLocalUser();
+      if (updated) {
+        setCurrentUser({
+          id: updated.id,
+          name: updated.name || updated.email?.split('@')[0] || 'Driver',
+          email: updated.email
+        });
+      }
+    };
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
   const handleAddStopover = () => {
@@ -148,9 +164,10 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
     try {
       const depDateTime = new Date(`${departureDate}T${departureTime}:00`);
 
-      const payload: CreateRideRequest & { driver_name?: string } = {
+      const payload: CreateRideRequest & { driver_name?: string; driver_email?: string } = {
         driver_id: currentUser.id,
         driver_name: currentUser.name || 'Driver',
+        driver_email: currentUser.email || undefined,
         departure_city: departureCity,
         departure_location_name: departureLocation || `${departureCity} City Center`,
         departure_time: depDateTime.toISOString(),
