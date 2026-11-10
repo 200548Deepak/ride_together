@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
 import { CreateRideRequest } from '@/types/ride';
+import DeparturePlaceAutocomplete from './DeparturePlaceAutocomplete';
 
 interface PublishRideFlowProps {
   onSuccess?: (createdRide: any) => void;
@@ -103,6 +104,21 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
       }
     };
     window.addEventListener('auth-change', handleAuthChange);
+
+    // 4. Initial prefill from URL or sessionStorage (e.g. from /offer-seats/departure)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlDepCity = params.get('dep_city') || sessionStorage.getItem('ride_together_publish_departure_city');
+      const urlDepAddr = params.get('dep_addr') || sessionStorage.getItem('ride_together_publish_departure_address');
+      const urlStep = params.get('step');
+
+      if (urlDepCity) {
+        setDepartureCity(urlDepCity);
+        if (urlDepAddr) setDepartureLocation(urlDepAddr);
+        if (urlStep === '2') setCurrentStep(2);
+      }
+    }
+
     return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
@@ -350,124 +366,32 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
           <div className="space-y-6">
             {/* Step 1: Departure Location */}
             {currentStep === 1 && (
-              <div className="space-y-5 animate-in fade-in duration-200">
-                <div>
-                  <h2 className="text-2xl font-black text-[#054752]">Where are you leaving from?</h2>
-                  <p className="text-[#708c91] text-sm mt-1">
-                    Enter the city and exact pickup address or landmark.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#054752] uppercase tracking-wider mb-1.5">
-                      Departure City
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Bengaluru"
-                      value={departureCity}
-                      onChange={e => setDepartureCity(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#00aff5] text-[#054752] font-semibold text-base"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#054752] uppercase tracking-wider mb-1.5">
-                      Pickup Spot / Landmark (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Majestic Bus Station or Silk Board"
-                      value={departureLocation}
-                      onChange={e => setDepartureLocation(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#00aff5] text-[#054752] text-sm"
-                    />
-                  </div>
-
-                  {/* Preset Pills */}
-                  <div>
-                    <span className="text-xs text-[#708c91] font-semibold">Popular Cities:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {CITY_PRESETS.map(city => (
-                        <button
-                          key={city}
-                          type="button"
-                          onClick={() => setDepartureCity(city)}
-                          className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                            departureCity.toLowerCase() === city.toLowerCase()
-                              ? 'bg-[#00aff5] text-white border-[#00aff5] font-bold'
-                              : 'bg-slate-50 text-[#054752] border-slate-200 hover:border-gray-400 font-medium'
-                          }`}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <DeparturePlaceAutocomplete
+                mode="departure"
+                title="Where are you leaving from?"
+                defaultValue={departureLocation || departureCity}
+                embedded={true}
+                onSelectLocation={(loc) => {
+                  setDepartureCity(loc.city);
+                  setDepartureLocation(loc.address);
+                  setCurrentStep(2);
+                }}
+              />
             )}
 
             {/* Step 2: Arrival Location */}
             {currentStep === 2 && (
-              <div className="space-y-5 animate-in fade-in duration-200">
-                <div>
-                  <h2 className="text-2xl font-black text-[#054752]">Where are you heading?</h2>
-                  <p className="text-[#708c91] text-sm mt-1">
-                    Enter the arrival city and preferred drop-off location.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-[#054752] uppercase tracking-wider mb-1.5">
-                      Arrival City
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mysuru or Hutagalli"
-                      value={arrivalCity}
-                      onChange={e => setArrivalCity(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#00aff5] text-[#054752] font-semibold text-base"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#054752] uppercase tracking-wider mb-1.5">
-                      Drop-off Spot / Landmark (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Suburban Bus Stand or Hootagalli Industrial Area"
-                      value={arrivalLocation}
-                      onChange={e => setArrivalLocation(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#00aff5] text-[#054752] text-sm"
-                    />
-                  </div>
-
-                  {/* Preset Pills */}
-                  <div>
-                    <span className="text-xs text-[#708c91] font-semibold">Popular Destinations:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {CITY_PRESETS.filter(c => c.toLowerCase() !== departureCity.toLowerCase()).map(city => (
-                        <button
-                          key={city}
-                          type="button"
-                          onClick={() => setArrivalCity(city)}
-                          className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                            arrivalCity.toLowerCase() === city.toLowerCase()
-                              ? 'bg-[#00aff5] text-white border-[#00aff5] font-bold'
-                              : 'bg-slate-50 text-[#054752] border-slate-200 hover:border-gray-400 font-medium'
-                          }`}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <DeparturePlaceAutocomplete
+                mode="arrival"
+                title="Where are you heading?"
+                defaultValue={arrivalLocation || arrivalCity}
+                embedded={true}
+                onSelectLocation={(loc) => {
+                  setArrivalCity(loc.city);
+                  setArrivalLocation(loc.address);
+                  setCurrentStep(3);
+                }}
+              />
             )}
 
             {/* Step 3: Stopovers (Waypoints) */}
