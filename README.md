@@ -142,3 +142,4 @@ ride_together/
 ## 📄 License
 
 MIT License. Built for learning and building modern mobility applications.
+

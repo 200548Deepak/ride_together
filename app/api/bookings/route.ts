@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { BookingRequest, BookingResponse } from '@/types/booking';
 
 /**
@@ -72,6 +72,31 @@ export async function POST(req: NextRequest) {
           }
         },
         { status: 400 }
+      );
+    }
+
+    // Demo Mode fallback when Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      const calculatedPrice = total_price != null ? Number(total_price) : 500 * requestedSeats;
+      const demoBooking = {
+        id: `demo-booking-${Date.now()}`,
+        trip_id: trip_id || multimodal_id || 'demo-trip-1',
+        passenger_id: passenger_id || 'usr_demo_passenger',
+        seats_reserved: requestedSeats,
+        total_price: calculatedPrice,
+        currency,
+        status: 'confirmed' as const,
+        payment_method,
+        created_at: new Date().toISOString()
+      };
+
+      return NextResponse.json<BookingResponse>(
+        {
+          success: true,
+          booking: demoBooking,
+          message: 'Booking reservation confirmed successfully (Demo Mode)!'
+        },
+        { status: 201 }
       );
     }
 
@@ -317,6 +342,15 @@ export async function PATCH(req: NextRequest) {
         { success: false, error: 'booking_id and status are required' },
         { status: 400 }
       );
+    }
+
+    // Demo Mode fallback when Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        success: true,
+        booking: { id: booking_id, status },
+        message: `Booking has been ${status} (Demo Mode)`
+      });
     }
 
     if (!['confirmed', 'cancelled', 'pending'].includes(status)) {

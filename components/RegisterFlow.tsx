@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { getSupabaseClient } from '../lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, saveLocalUser, AppUser } from '../lib/supabaseClient';
 
 export interface RegisterFlowProps {
   isOpen: boolean;
@@ -147,30 +147,39 @@ export default function RegisterFlow({
     const formattedBirthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
+    const createSimulatedUser = (): AppUser => ({
+      id: `usr_${Date.now()}`,
+      email: email.trim(),
+      name: fullName,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      birth_date: formattedBirthDate,
+      gender,
+      user_metadata: {
+        name: fullName,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        birth_date: formattedBirthDate,
+        gender,
+      },
+    });
+
+    // 1. Fallback mode if Supabase credentials are not configured in .env.local
+    if (!isSupabaseConfigured()) {
+      setTimeout(() => {
+        setLoading(false);
+        const mockUser = createSimulatedUser();
+        saveLocalUser(mockUser);
+        if (onSuccess) onSuccess(mockUser);
+        handleClose();
+      }, 500);
+      return;
+    }
+
     try {
       const supabase = getSupabaseClient();
 
-      if (!supabase) {
-        // Mock fallback if Supabase environment variables aren't yet configured
-        console.warn('Supabase client not configured. Simulating successful registration.');
-        setTimeout(() => {
-          setLoading(false);
-          const mockUser = {
-            id: 'mock-new-user-456',
-            email: email.trim(),
-            name: fullName,
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            birth_date: formattedBirthDate,
-            gender,
-          };
-          if (onSuccess) onSuccess(mockUser);
-          handleClose();
-        }, 800);
-        return;
-      }
-
-      // 1. Supabase Auth Sign Up
+      // 2. Supabase Auth Sign Up
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -194,8 +203,31 @@ export default function RegisterFlow({
       const userId = authData.user?.id;
 
       if (userId) {
-        // 2. Explicitly insert/upsert into public.users table
-        const { error: userTableError } = await supabase.from('users').upsert({
+        // 3. Upsert into public.users and public.profiles
+        try {
+          await supabase.from('users').upsert({
+            id: userId,
+            email: email.trim(),
+            name: fullName,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            birth_date: formattedBirthDate,
+            gender,
+            is_verified: false,
+            rating: 5.0,
+          });
+
+          await supabase.from('profiles').upsert({
+            id: userId,
+            name: fullName,
+            is_verified: false,
+            rating: 5.0,
+          });
+        } catch (dbErr) {
+          console.warn('Database upsert warning (trigger may manage user table):', dbErr);
+        }
+
+        const registeredUser: AppUser = {
           id: userId,
           email: email.trim(),
           name: fullName,
@@ -203,26 +235,27 @@ export default function RegisterFlow({
           last_name: lastName.trim(),
           birth_date: formattedBirthDate,
           gender,
-          is_verified: false,
-          rating: 5.0,
-        });
+          user_metadata: authData.user?.user_metadata || {
+            name: fullName,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+          },
+        };
 
-        if (userTableError) {
-          console.warn('Could not insert to public.users directly (trigger may handle it):', userTableError);
-        }
-
-        // 3. Also sync into public.profiles for ride listings
-        await supabase.from('profiles').upsert({
-          id: userId,
-          name: fullName,
-          is_verified: false,
-          rating: 5.0,
-        });
-
-        if (onSuccess) onSuccess(authData.user);
+        saveLocalUser(registeredUser);
+        if (onSuccess) onSuccess(registeredUser);
         handleClose();
       }
     } catch (err: any) {
+      // If network fetch fails (e.g. backend unreachable or DNS failure), fallback gracefully
+      if (err?.message?.includes('fetch') || err?.message?.includes('Failed') || err?.name === 'TypeError') {
+        console.warn('Network error reaching Supabase auth endpoint. Falling back to local session.');
+        const mockUser = createSimulatedUser();
+        saveLocalUser(mockUser);
+        if (onSuccess) onSuccess(mockUser);
+        handleClose();
+        return;
+      }
       setErrorMessage(err.message || 'An unexpected error occurred during account creation.');
     } finally {
       setLoading(false);

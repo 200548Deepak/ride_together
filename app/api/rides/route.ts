@@ -1,7 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { CreateRideRequest } from '@/types/ride';
 import crypto from 'crypto';
+
+// In-memory demo store for when Supabase credentials are not yet configured
+const DEMO_RIDES_CACHE: any[] = [
+  {
+    id: 'demo-ride-101',
+    driver_id: 'usr_demo_driver',
+    multimodal_id: 'DEMO-MM-101',
+    departure_city: 'Bengaluru',
+    departure_location_name: 'Majestic Bus Station, Bengaluru',
+    departure_lat: 12.9716,
+    departure_lon: 77.5946,
+    departure_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    arrival_city: 'Mysuru',
+    arrival_location_name: 'Suburban Bus Stand, Mysuru',
+    arrival_lat: 12.2958,
+    arrival_lon: 76.6394,
+    arrival_time: new Date(Date.now() + 27 * 60 * 60 * 1000).toISOString(),
+    total_seats: 3,
+    available_seats: 2,
+    price_amount: 450,
+    currency: 'INR',
+    status: 'SCHEDULED',
+    instant_booking: true,
+    two_max_back: true,
+    air_conditioning: true,
+    power_outlets: true,
+    smoking_allowed: false,
+    pets_allowed: false,
+    created_at: new Date().toISOString(),
+    vehicle: {
+      id: 'demo-veh-1',
+      make: 'Hyundai',
+      model: 'Creta',
+      color: 'Polar White',
+      license_plate: 'KA 03 MN 4589'
+    },
+    waypoints: [],
+    bookings: [
+      {
+        id: 'demo-booking-1',
+        seats_reserved: 1,
+        total_price: 450,
+        currency: 'INR',
+        status: 'confirmed',
+        payment_method: 'CASH',
+        created_at: new Date().toISOString(),
+        passenger: {
+          id: 'demo-passenger-1',
+          name: 'Priya Sharma',
+          email: 'priya@example.com',
+          phone: '+91 98765 43210',
+          avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+          rating: 4.9,
+          ratings_count: 14
+        }
+      }
+    ]
+  }
+];
 
 // City coordinates mapping for common routes in India
 const CITY_COORDINATES: Record<string, { lat: number; lon: number }> = {
@@ -110,6 +169,76 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: { code: 'INVALID_SEATS', message: 'Seats must be between 1 and 8.' } },
         { status: 400 }
+      );
+    }
+
+    // Demo Mode fallback when Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      const depDate = new Date(departure_time);
+      const arrDate = body.arrival_time ? new Date(body.arrival_time) : new Date(depDate.getTime() + 2.5 * 60 * 60 * 1000);
+      const multimodalId = crypto.randomBytes(24).toString('base64url');
+      const depCoords = getCityCoords(departure_city);
+      const arrCoords = getCityCoords(arrival_city);
+
+      const demoRide = {
+        id: `ride_${crypto.randomUUID()}`,
+        multimodal_id: multimodalId,
+        driver_id: driverId,
+        departure_city: departure_city.trim(),
+        departure_location_name: departure_location_name || `${departure_city.trim()} City Center`,
+        departure_lat: depCoords.lat,
+        departure_lon: depCoords.lon,
+        departure_time: depDate.toISOString(),
+        arrival_city: arrival_city.trim(),
+        arrival_location_name: arrival_location_name || `${arrival_city.trim()} Center`,
+        arrival_lat: arrCoords.lat,
+        arrival_lon: arrCoords.lon,
+        arrival_time: arrDate.toISOString(),
+        total_seats: seatsNum,
+        available_seats: seatsNum,
+        price_amount: priceNum,
+        currency: body.currency || 'INR',
+        status: 'SCHEDULED',
+        instant_booking: body.instant_booking ?? true,
+        two_max_back: body.two_max_back ?? true,
+        air_conditioning: body.air_conditioning ?? true,
+        power_outlets: body.power_outlets ?? false,
+        smoking_allowed: body.smoking_allowed ?? false,
+        pets_allowed: body.pets_allowed ?? false,
+        created_at: new Date().toISOString(),
+        driver: {
+          id: driverId,
+          name: 'Ride Together Driver',
+          avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          rating: 5.0,
+          is_verified: true
+        },
+        vehicle: {
+          id: `veh_${Date.now()}`,
+          make: body.vehicle_make || 'Hyundai',
+          model: body.vehicle_model || 'i20',
+          color: body.vehicle_color || 'White',
+          license_plate: body.license_plate || 'KA 01 AB 1234'
+        },
+        waypoints: (body.waypoints || []).map((wp, i) => ({
+          location_name: wp.location_name,
+          stop_order: wp.stop_order ?? i + 1,
+          latitude: wp.latitude || 12.5,
+          longitude: wp.longitude || 76.8,
+          estimated_arrival: wp.estimated_arrival || new Date(depDate.getTime() + (i + 1) * 45 * 60 * 1000).toISOString()
+        })),
+        bookings: []
+      };
+
+      DEMO_RIDES_CACHE.unshift(demoRide);
+
+      return NextResponse.json(
+        {
+          success: true,
+          ride: demoRide,
+          message: 'Ride published successfully (Demo Mode: stored locally).'
+        },
+        { status: 201 }
       );
     }
 
@@ -314,6 +443,19 @@ export async function GET(req: NextRequest) {
     if (!driverId) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) driverId = session.user.id;
+    }
+
+    // Demo Mode fallback when Supabase is not configured
+    if (!isSupabaseConfigured()) {
+      const filtered = driverId
+        ? DEMO_RIDES_CACHE.filter(r => r.driver_id === driverId)
+        : DEMO_RIDES_CACHE;
+
+      return NextResponse.json({
+        success: true,
+        count: (filtered.length > 0 ? filtered : DEMO_RIDES_CACHE).length,
+        rides: filtered.length > 0 ? filtered : DEMO_RIDES_CACHE
+      });
     }
 
     let query = supabase

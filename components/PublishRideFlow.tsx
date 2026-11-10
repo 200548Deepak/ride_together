@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
 import { CreateRideRequest } from '@/types/ride';
 
 interface PublishRideFlowProps {
@@ -66,18 +66,29 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
   const [publishedRide, setPublishedRide] = useState<any | null>(null);
   const [currentUser, setCurrentUser] = useState<{ id: string; name?: string } | null>(null);
 
-  const supabase = getSupabaseClient();
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        setCurrentUser({
-          id: data.user.id,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver'
-        });
-      }
-    });
-  }, [supabase.auth]);
+    // 1. Initial hydration from local demo storage
+    const local = getLocalUser();
+    if (local) {
+      setCurrentUser({
+        id: local.id,
+        name: local.name || local.email?.split('@')[0] || 'Driver'
+      });
+    }
+
+    // 2. Supabase auth check if configured
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setCurrentUser({
+            id: data.user.id,
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver'
+          });
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const handleAddStopover = () => {
     if (newStopover.trim() && !stopovers.includes(newStopover.trim())) {

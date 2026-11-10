@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
 import { RideDetailsData, PaymentMethod, BookingResponse } from '@/types/booking';
 
 interface CheckoutModalProps {
@@ -28,26 +28,37 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
   const [user, setUser] = useState<{ id: string; email?: string; name?: string } | null>(null);
 
-  const supabase = getSupabaseClient();
-
   useEffect(() => {
     setSeats(Math.min(initialSeats, Math.max(1, ride.available_seats || 1)));
     setErrorMessage(null);
     setBookingResult(null);
 
-    // Fetch authenticated user
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Passenger'
-        });
-      } else {
-        setUser(null);
-      }
-    });
-  }, [isOpen, ride, initialSeats, supabase.auth]);
+    // 1. Initial local user hydration
+    const local = getLocalUser();
+    if (local) {
+      setUser({
+        id: local.id,
+        email: local.email,
+        name: local.name || local.email?.split('@')[0] || 'Passenger'
+      });
+    }
+
+    // 2. Fetch authenticated Supabase user if configured
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Passenger'
+          });
+        } else if (!local) {
+          setUser(null);
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen, ride, initialSeats]);
 
   if (!isOpen) return null;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
 import { DriverRideItem, DriverRideBooking } from '@/types/ride';
 import PublishRideFlow from './PublishRideFlow';
 
@@ -76,20 +76,40 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
   }, [supabase]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        const u = {
-          id: data.user.id,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver',
-          email: data.user.email
-        };
-        setUser(u);
-        fetchDriverRides(u.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-  }, [supabase.auth, fetchDriverRides]);
+    // 1. Check local session
+    const local = getLocalUser();
+    if (local) {
+      const u = {
+        id: local.id,
+        name: local.name || local.email?.split('@')[0] || 'Driver',
+        email: local.email
+      };
+      setUser(u);
+      fetchDriverRides(u.id);
+    }
+
+    // 2. Query Supabase auth if configured
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          const u = {
+            id: data.user.id,
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Driver',
+            email: data.user.email
+          };
+          setUser(u);
+          fetchDriverRides(u.id);
+        } else if (!local) {
+          setIsLoading(false);
+        }
+      }).catch(() => {
+        if (!local) setIsLoading(false);
+      });
+    } else if (!local) {
+      setIsLoading(false);
+    }
+  }, [fetchDriverRides]);
 
   const handleBookingAction = async (bookingId: string, status: 'confirmed' | 'cancelled') => {
     setActionLoadingId(bookingId);

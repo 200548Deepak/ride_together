@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import LoginModal from '../components/LoginModal';
 import RegisterFlow from '../components/RegisterFlow';
-import { getSupabaseClient } from '../lib/supabaseClient';
+import {
+  getSupabaseClient,
+  isSupabaseConfigured,
+  getLocalUser,
+  saveLocalUser,
+  removeLocalUser,
+  AppUser
+} from '../lib/supabaseClient';
 
 const POPULAR_ROUTES = [
   { from: 'Bengaluru', to: 'Mysuru', price: '₹500', time: '2h 10m' },
@@ -56,36 +63,59 @@ export default function HomePage() {
   const searchWidgetRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Supabase Auth listener
+  // Initialize Auth listener (Supabase + Local fallback)
   useEffect(() => {
-    const supabase = getSupabaseClient();
-    if (supabase) {
+    // 1. Initial hydration from localStorage
+    const cachedUser = getLocalUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+    }
+
+    // 2. Custom event listener for instant reactive sync
+    const handleAuthEvent = (e: any) => {
+      const u = e?.detail ?? getLocalUser();
+      setUser(u);
+    };
+    window.addEventListener('auth-change', handleAuthEvent);
+
+    // 3. Supabase Auth sync if configured
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
-          setUser({
+          const authUser = {
             id: data.user.id,
             name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email
-          });
+          };
+          setUser(authUser);
+          saveLocalUser(authUser);
         }
-      });
+      }).catch(() => {});
 
       const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) {
-          setUser({
+          const authUser = {
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email
-          });
-        } else {
+          };
+          setUser(authUser);
+          saveLocalUser(authUser);
+        } else if (!getLocalUser()) {
           setUser(null);
         }
       });
 
       return () => {
+        window.removeEventListener('auth-change', handleAuthEvent);
         authListener.subscription.unsubscribe();
       };
     }
+
+    return () => {
+      window.removeEventListener('auth-change', handleAuthEvent);
+    };
   }, []);
 
   // Close dropdowns on outside click
@@ -105,9 +135,10 @@ export default function HomePage() {
   }, []);
 
   const handleSignOut = async () => {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      await supabase.auth.signOut();
+    removeLocalUser();
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut().catch(() => {});
     }
     setUser(null);
     setIsUserMenuOpen(false);
@@ -725,11 +756,13 @@ export default function HomePage() {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onSuccess={loggedUser => {
-          setUser({
+          const u: AppUser = {
             id: loggedUser.id,
-            name: loggedUser.user_metadata?.name || loggedUser.email?.split('@')[0],
+            name: loggedUser.user_metadata?.name || loggedUser.name || loggedUser.email?.split('@')[0],
             email: loggedUser.email
-          });
+          };
+          setUser(u);
+          saveLocalUser(u);
           setIsLoginOpen(false);
         }}
         onSwitchToRegister={() => {
@@ -742,11 +775,13 @@ export default function HomePage() {
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
         onSuccess={newUser => {
-          setUser({
+          const u: AppUser = {
             id: newUser.id,
-            name: newUser.user_metadata?.name || newUser.email?.split('@')[0],
+            name: newUser.user_metadata?.name || newUser.name || newUser.email?.split('@')[0],
             email: newUser.email
-          });
+          };
+          setUser(u);
+          saveLocalUser(u);
           setIsRegisterOpen(false);
         }}
         onSwitchToLogin={() => {
