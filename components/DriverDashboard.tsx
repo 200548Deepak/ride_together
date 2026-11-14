@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient, isSupabaseConfigured, getLocalUser, removeLocalUser } from '@/lib/supabaseClient';
+import { getAuthToken, getAuthUser } from '@/lib/authClient';
 import { DriverRideItem, DriverRideBooking } from '@/types/ride';
 import PublishRideFlow from './PublishRideFlow';
 
@@ -30,12 +31,16 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
       setIsLoading(true);
 
       if (userId || userEmail) {
+        const token = getAuthToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         // 1. Fetch rides published by this user as driver ONLY
         const rideParams = new URLSearchParams();
         if (userId) rideParams.set('driver_id', userId);
         if (userEmail) rideParams.set('driver_email', userEmail);
         
-        const res = await fetch(`/api/rides?${rideParams.toString()}`);
+        const res = await fetch(`/api/rides?${rideParams.toString()}`, { headers });
         const data = await res.json();
         if (res.ok && data.success) {
           setRides(data.rides || []);
@@ -48,7 +53,7 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
         if (userId) bookParams.set('passenger_id', userId);
         if (userEmail) bookParams.set('passenger_email', userEmail);
 
-        const bookRes = await fetch(`/api/bookings?${bookParams.toString()}`);
+        const bookRes = await fetch(`/api/bookings?${bookParams.toString()}`, { headers });
         const bookData = await bookRes.json();
         if (bookRes.ok && bookData.success) {
           setPassengerBookings(bookData.bookings || []);
@@ -138,9 +143,13 @@ export const DriverDashboard: React.FC<DriverDashboardProps> = ({ onOpenLogin })
     setFeedbackMessage(null);
 
     try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/bookings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ booking_id: bookingId, status })
       });
 

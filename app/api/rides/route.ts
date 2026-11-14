@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getAuthUserFromRequest } from '@/lib/jwt';
 import {
   addSharedRide,
   getAllSharedRides,
@@ -42,10 +43,13 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseClient();
     const body: CreateRideRequest = await req.json();
 
-    let driverId = body.driver_id;
+    const jwtUser = getAuthUserFromRequest(req);
+    let driverId = body.driver_id || jwtUser?.userId;
+    let driverEmail = body.driver_email || jwtUser?.email;
+    let driverName = body.driver_name || jwtUser?.name;
 
-    if (body.driver_email) {
-      driverId = `usr_${body.driver_email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    if (driverEmail) {
+      driverId = `usr_${driverEmail.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
     }
 
     // 1. Authenticate driver from Authorization header if driver_id not provided
@@ -251,8 +255,9 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const driverId = searchParams.get('driver_id');
-    const driverEmail = searchParams.get('driver_email') || undefined;
+    const auth = getAuthUserFromRequest(req);
+    const driverId = searchParams.get('driver_id') || auth?.userId;
+    const driverEmail = searchParams.get('driver_email') || auth?.email || undefined;
     const all = searchParams.get('all') === 'true';
 
     // If all=true, return all shared active rides (for search or public directory)

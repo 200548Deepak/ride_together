@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { RideDetailsData } from '@/types/booking';
 import RideDetails from '@/components/RideDetails';
-import LoginModal from '@/components/LoginModal';
-import RegisterFlow from '@/components/RegisterFlow';
+import Header from '@/components/Header';
+import AuthModal from '@/components/AuthModal';
 
 export default function TripPage() {
   const params = useParams();
@@ -16,9 +16,9 @@ export default function TripPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Auth modal states
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  // Auth modal state
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   const loadRide = React.useCallback(async () => {
     try {
@@ -76,40 +76,31 @@ export default function TripPage() {
   }
 
   return (
-    <>
-      <RideDetails
-        ride={ride}
-        onBack={() => router.push('/search')}
-        onBookingSuccess={() => loadRide()}
-        onOpenLogin={() => setIsLoginOpen(true)}
-      />
+    <div className="min-h-screen bg-[#f4f7f8] flex flex-col">
+      <Header />
+      <div className="flex-1">
+        <RideDetails
+          ride={ride}
+          onBack={() => router.push('/search')}
+          onBookingSuccess={() => loadRide()}
+          onOpenLogin={() => {
+            setAuthMode('login');
+            setIsAuthOpen(true);
+          }}
+        />
+      </div>
 
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSwitchToRegister={() => {
-          setIsLoginOpen(false);
-          setIsRegisterOpen(true);
-        }}
+      {/* Unified JWT Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        initialMode={authMode}
+        onClose={() => setIsAuthOpen(false)}
         onSuccess={() => {
-          setIsLoginOpen(false);
+          setIsAuthOpen(false);
+          loadRide();
         }}
       />
-
-      {/* Registration Flow Modal */}
-      <RegisterFlow
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onSwitchToLogin={() => {
-          setIsRegisterOpen(false);
-          setIsLoginOpen(true);
-        }}
-        onSuccess={() => {
-          setIsRegisterOpen(false);
-        }}
-      />
-    </>
+    </div>
   );
 }
 

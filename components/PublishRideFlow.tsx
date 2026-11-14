@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
+import { getAuthToken, getAuthUser } from '@/lib/authClient';
 import { CreateRideRequest } from '@/types/ride';
 import DeparturePlaceAutocomplete from './DeparturePlaceAutocomplete';
 
@@ -209,9 +210,15 @@ export const PublishRideFlow: React.FC<PublishRideFlowProps> = ({
         }))
       };
 
+      const token = getAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/rides', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
       });
 

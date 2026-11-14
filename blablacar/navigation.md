@@ -104,3 +104,4 @@ When navigating from search results into trip details and checkout, BlaBlaCar pr
 | © 2026 BlaBlaCar, All rights reserved.                                               |
 +--------------------------------------------------------------------------------------+
 ```
+

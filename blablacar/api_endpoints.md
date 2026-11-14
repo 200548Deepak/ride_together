@@ -188,3 +188,4 @@ All endpoint request/response traces are preserved in `blablacar/hax/`.
   * `to_place_id`: Geocoded destination ID
   * `requested_seats`: Integer (1 to 8)
   * `transport_type`: `CARPOOLING`
+

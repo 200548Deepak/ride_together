@@ -140,3 +140,4 @@ BlaBlaCar hydrates the browser DOM from Node.js SSR through dedicated global win
 
 4. **`window["__INFRASTRUCTURE__redux"]`**:
    * Manages global slices: `requests`, `entities`, `settings`, `publish`, `session`, `errors`, `snackbar`, and `views`.
+

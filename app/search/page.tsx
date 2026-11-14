@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Header from '@/components/Header';
 import FilterSidebar, { FilterState, DEFAULT_FILTERS, filterAndSortTrips } from '@/components/FilterSidebar';
 import SearchResults from '@/components/SearchResults';
 import { BlaBlaCarSearchResponse, TripSearchItem } from '@/types/blablacar-search';
@@ -97,7 +98,8 @@ function SearchResultsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f7f8] text-[#054752] pb-16">
+    <div className="min-h-screen bg-[#f4f7f8] text-[#054752] pb-16 flex flex-col">
+      <Header />
       {/* Search Header Banner */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">

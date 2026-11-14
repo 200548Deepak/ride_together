@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient, isSupabaseConfigured, getLocalUser } from '@/lib/supabaseClient';
+import { getAuthToken, getAuthUser } from '@/lib/authClient';
 import { RideDetailsData, PaymentMethod, BookingResponse } from '@/types/booking';
 
 interface CheckoutModalProps {
@@ -94,11 +95,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setErrorMessage(null);
 
     try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           trip_id: ride.id,
           multimodal_id: ride.multimodalId.id,

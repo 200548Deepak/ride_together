@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { getAuthUserFromRequest } from '@/lib/jwt';
 import {
   bookSharedRide,
   getSharedBookingsByPassenger,
@@ -29,8 +30,13 @@ export async function POST(req: NextRequest) {
 
     let passenger_id = body.passenger_id;
 
-    // 1. Authenticate passenger via token if not explicitly provided
-    if (!passenger_id) {
+    // 1. Authenticate passenger via JWT or bearer token
+    const jwtUser = getAuthUserFromRequest(req);
+    if (jwtUser) {
+      passenger_id = jwtUser.userId;
+      if (!body.passenger_name) body.passenger_name = jwtUser.name;
+      if (!body.passenger_email) body.passenger_email = jwtUser.email;
+    } else if (!passenger_id) {
       const authHeader = req.headers.get('authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.replace('Bearer ', '');
@@ -310,8 +316,9 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseClient();
     const { searchParams } = new URL(req.url);
     const trip_id = searchParams.get('trip_id');
-    const passenger_id = searchParams.get('passenger_id');
-    const passenger_email = searchParams.get('passenger_email') || undefined;
+    const auth = getAuthUserFromRequest(req);
+    const passenger_id = searchParams.get('passenger_id') || auth?.userId;
+    const passenger_email = searchParams.get('passenger_email') || auth?.email || undefined;
 
     // 1. Gather bookings from shared store first
     let mappedBookings: any[] = [];

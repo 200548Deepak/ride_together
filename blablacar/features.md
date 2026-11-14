@@ -93,3 +93,4 @@ sequenceDiagram
 ### 2.6 Sustainability & Carbon Savings
 * Formula: $\text{CO}_2\text{ saved (kg)} = \text{Distance (km)} \times 0.120\text{ kg/km} \times \frac{\text{Seats Booked}}{\text{Vehicle Capacity}}$
 * Displays an eco-badge on search results: e.g. *"Saves ~14 kg CO₂ compared to solo travel"*.
+

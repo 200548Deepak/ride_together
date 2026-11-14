@@ -72,3 +72,4 @@ blablacar/
 * **Primary Font**: `GT Eesti Pro Display` (Fallbacks: `Google Sans`, `-apple-system`, `sans-serif`)
 * **API Gateway Host**: `https://edge.blablacar.in`
 * **Session Auth**: JWT Bearer Tokens with automated refresh cycle via cookies
+

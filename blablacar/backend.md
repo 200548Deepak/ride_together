@@ -119,3 +119,4 @@ BlaBlaCar combines **Redux Toolkit** and **TanStack Query (React Query)**:
    * Uses **Nethone** device fingerprinting to detect automated scrapers, multiple account abuse, and fake ride postings.
 3. **Behavioral Analytics**:
    * Dispatches batched clickstream events to `t.blablacar.com/v2/c` with search UUID tracking conversion funnels from origin to booking confirmation.
+

@@ -98,3 +98,4 @@ font-family: "GT Eesti Pro Display", "Google Sans", -apple-system, BlinkMacSyste
   * Origin checkpoint: Open circle (`border-4 border-[#054752]`).
   * Waypoint checkpoint: Solid small dot (`bg-[#708c91]`).
   * Destination checkpoint: Solid circle (`bg-[#054752]`).
+
