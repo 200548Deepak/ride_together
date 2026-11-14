@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.376Z",
+  "endpointId": "09_GET_web_manifest",
+  "name": "Progressive Web App Manifest",
+  "category": "Application Metadata",
+  "description": "Supplies web app manifest metadata, theme color (#00aff5), application icons, and display modes.",
+  "request": {
+    "method": "GET",
+    "url": "https://www.blablacar.in/manifest.json",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "sec-ch-ua-full-version-list",
+        "value": "\"Not-A.Brand\";v=\"99.0.0.0\", \"Brave\";v=\"157.0.0.0\", \"Chromium\";v=\"157.0.0.0\""
+      },
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "Referer",
+        "value": "https://www.blablacar.in/search?fn=Bengaluru%2C+Karnataka%2C+India&tn=Mysore%2C+Karnataka%2C+India&db=2026-11-09&seats=1&search_origin=HOME&transport_type=CARPOOLING&from_place_id=eyJpIjoiQ2hJSmJVNjB5WEFXcmpzUjRFOS1VZWpEM19nIiwicCI6MSwidiI6MSwidCI6WzRdfQ%3D%3D&to_place_id=eyJpIjoiQ2hJSi1TNVhIVGh3cnpzUmJUbjR3T2pzaVNzIiwicCI6MSwidiI6MSwidCI6WzRdfQ%3D%3D"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-model",
+        "value": "\"\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "sec-ch-ua-arch",
+        "value": "\"x86\""
+      },
+      {
+        "name": "User-Agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "sec-ch-ua-platform-version",
+        "value": "\"19.0.0\""
+      }
+    ],
+    "queryString": [],
+    "postData": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "age",
+        "value": "45"
+      },
+      {
+        "name": "x-content-type-options",
+        "value": "nosniff"
+      },
+      {
+        "name": "alt-svc",
+        "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+      },
+      {
+        "name": "date",
+        "value": "Mon, 09 Nov 2026 14:00:46 GMT"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "feature-policy",
+        "value": "camera 'none'; microphone 'none'; geolocation 'none'"
+      },
+      {
+        "name": "x-frame-options",
+        "value": "sameorigin"
+      },
+      {
+        "name": "content-security-policy",
+        "value": "frame-ancestors 'self'"
+      },
+      {
+        "name": "cache-control",
+        "value": "public, max-age=60"
+      },
+      {
+        "name": "x-dns-prefetch-control",
+        "value": "off"
+      },
+      {
+        "name": "referrer-policy",
+        "value": "no-referrer"
+      },
+      {
+        "name": "x-download-options",
+        "value": "noopen"
+      },
+      {
+        "name": "via",
+        "value": "1.1 google"
+      },
+      {
+        "name": "content-length",
+        "value": "655"
+      },
+      {
+        "name": "x-xss-protection",
+        "value": "1; mode=block"
+      },
+      {
+        "name": "server",
+        "value": "istio-envoy"
+      }
+    ],
+    "content": {
+      "size": 655,
+      "mimeType": "application/json",
+      "body": {
+        "name": "BlaBlaCar",
+        "short_name": "BlaBlaCar",
+        "icons": [
+          {
+            "src": "https://blablacar.com/favicon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+          },
+          {
+            "src": "https://blablacar.com/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+          },
+          {
+            "src": "https://blablacar.com/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+          }
+        ],
+        "start_url": ".",
+        "display": "standalone",
+        "prefer_related_applications": true,
+        "related_applications": [
+          {
+            "platform": "play",
+            "id": "com.comuto"
+          }
+        ]
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": false,
+    "requiresAuth": false,
+    "targetHost": "www.blablacar.in"
+  }
+}

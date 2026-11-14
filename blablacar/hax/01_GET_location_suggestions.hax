@@ -1,0 +1,306 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.279Z",
+  "endpointId": "01_GET_location_suggestions",
+  "name": "Location Autocomplete & Suggestions",
+  "category": "Search & Location",
+  "description": "Provides place suggestions, geocoding candidates, recent user location history, and transit landmarks for departure and arrival inputs.",
+  "request": {
+    "method": "GET",
+    "url": "https://edge.blablacar.in/location/suggestions?query=Bengaluru%2C+Karnataka%2C+India&with_user_history=true",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": ":authority",
+        "value": "edge.blablacar.in"
+      },
+      {
+        "name": ":method",
+        "value": "GET"
+      },
+      {
+        "name": ":path",
+        "value": "/location/suggestions?query=Bengaluru%2C+Karnataka%2C+India&with_user_history=true"
+      },
+      {
+        "name": ":scheme",
+        "value": "https"
+      },
+      {
+        "name": "accept",
+        "value": "*/*"
+      },
+      {
+        "name": "accept-encoding",
+        "value": "gzip, deflate, br, zstd"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-IN"
+      },
+      {
+        "name": "origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "priority",
+        "value": "u=1, i"
+      },
+      {
+        "name": "referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "sec-fetch-dest",
+        "value": "empty"
+      },
+      {
+        "name": "sec-fetch-mode",
+        "value": "cors"
+      },
+      {
+        "name": "sec-fetch-site",
+        "value": "same-site"
+      },
+      {
+        "name": "sec-gpc",
+        "value": "1"
+      },
+      {
+        "name": "user-agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-endpoint",
+        "value": "GET /location/suggestions"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-type",
+        "value": "typescript"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-version",
+        "value": "4.2140.0"
+      },
+      {
+        "name": "x-client",
+        "value": "SPA|1.0.0"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "bff5270f-4ee1-4131-a175-217fa10036f2"
+      },
+      {
+        "name": "x-currency",
+        "value": "INR"
+      },
+      {
+        "name": "x-locale",
+        "value": "en_IN"
+      },
+      {
+        "name": "x-viewport-height",
+        "value": "730"
+      },
+      {
+        "name": "x-viewport-width",
+        "value": "680"
+      },
+      {
+        "name": "x-visitor-id",
+        "value": "fc4ab4e2-e0a6-463c-a8cd-0005aa6dd3ae"
+      }
+    ],
+    "queryString": [
+      {
+        "name": "query",
+        "value": "Bengaluru%2C+Karnataka%2C+India"
+      },
+      {
+        "name": "with_user_history",
+        "value": "true"
+      }
+    ],
+    "postData": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "accept-ch",
+        "value": "Sec-CH-UA,Sec-CH-UA-Mobile,Sec-CH-UA-Platform,Sec-CH-UA-Arch,Sec-CH-UA-Full-Version-List,Sec-CH-UA-Model,Sec-CH-Device-Memory,Sec-CH-UA-Platform-Version"
+      },
+      {
+        "name": "access-control-allow-credentials",
+        "value": "true"
+      },
+      {
+        "name": "access-control-allow-origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "access-control-expose-headers",
+        "value": "Origin,Accept,Accept-Charset,Accept-Encoding,Accept-Language,Cache-Control,Content-Type,User-Agent,Authorization,Link,X-Correlation-Id,X-Forwarded-For,X-Visitor-Id,X-Locale,X-Currency,X-Total-Count,X-Page-Count,X-Current-Page,X-Real-IP,X-Forwarded-Proto,X-Forwarded-For,X-Trip-Search-Sorting-Algorithm,X-Client,X-Client-For,X-Blablacar-Accept-Endpoint-Version,X-Blablacar-Enable-Debug-Logs,X-Blablacar-Disable-Legacy-Error-Format,X-Blablacar-Maquette,X-Blablacar-GooglePlaces-Session-Token,X-DataDome-captchapassed,x-dd-b,BBC-Nethone-Attempt,bbc-debug-translations"
+      },
+      {
+        "name": "alt-svc",
+        "value": "h3=\":443\"; ma=2592000"
+      },
+      {
+        "name": "cache-control",
+        "value": "no-cache"
+      },
+      {
+        "name": "content-length",
+        "value": "1950"
+      },
+      {
+        "name": "content-security-policy",
+        "value": "frame-ancestors none"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "date",
+        "value": "Mon, 09 Nov 2026 14:01:34 GMT"
+      },
+      {
+        "name": "permissions-policy",
+        "value": "geolocation=(), microphone=(), camera=()"
+      },
+      {
+        "name": "referrer-policy",
+        "value": "no-referrer"
+      },
+      {
+        "name": "server",
+        "value": "istio-envoy"
+      },
+      {
+        "name": "strict-transport-security",
+        "value": "max-age=31536000; includeSubDomains; preload"
+      },
+      {
+        "name": "via",
+        "value": "1.1 google"
+      },
+      {
+        "name": "x-content-type-options",
+        "value": "nosniff"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "bff5270f-4ee1-4131-a175-217fa10036f2"
+      },
+      {
+        "name": "x-datadome",
+        "value": "protected"
+      },
+      {
+        "name": "x-dns-prefetch-control",
+        "value": "off"
+      },
+      {
+        "name": "x-download-options",
+        "value": "noopen"
+      },
+      {
+        "name": "x-envoy-upstream-service-time",
+        "value": "23"
+      },
+      {
+        "name": "x-frame-options",
+        "value": "deny"
+      },
+      {
+        "name": "x-xss-protection",
+        "value": "1; mode=block"
+      }
+    ],
+    "content": {
+      "size": 1950,
+      "mimeType": "application/json",
+      "body": [
+        {
+          "id": "eyJpIjoiQ2hJSmJVNjB5WEFXcmpzUjRFOS1VZWpEM19nIiwicCI6MSwidiI6MSwidCI6WzRdfQ==",
+          "address": "Bengaluru, Karnataka, India",
+          "types": [
+            "TYPE_UNKNOWN"
+          ],
+          "user_history": false,
+          "precise": false,
+          "main_text": "Bengaluru",
+          "secondary_text": "Karnataka, India"
+        },
+        {
+          "id": "eyJpIjoiQ2hJSk1RcnVJdHdqcmpzUm04b0ZpVUw5OFlZIiwicCI6MSwidiI6MSwidCI6WzRdfQ==",
+          "address": "Indian Institute of Horticultural Research, Ivar Kandapura, Bengaluru, Karnataka, India",
+          "types": [
+            "TYPE_UNKNOWN"
+          ],
+          "user_history": false,
+          "precise": false,
+          "main_text": "Indian Institute of Horticultural Research, Ivar Kandapura",
+          "secondary_text": "Bengaluru, Karnataka, India"
+        },
+        {
+          "id": "eyJpIjoiQ2hJSmFYRmVTeUlWcmpzUjNac19kTnE1dlNVIiwicCI6MSwidiI6MSwidCI6WzJdfQ==",
+          "address": "Indian Institute Of Management–Bangalore (IIM–Bangalore), Bannerghatta Road, Sundar Ram Shetty Nagar, Bilekahalli, Bengaluru, Karnataka, India",
+          "types": [
+            "POINT_OF_INTEREST"
+          ],
+          "user_history": false,
+          "precise": true,
+          "main_text": "Indian Institute Of Management–Bangalore (IIM–Bangalore)",
+          "secondary_text": "Bannerghatta Road, Sundar Ram Shetty Nagar, Bilekahalli, Bengaluru, Karnataka, India"
+        },
+        {
+          "id": "eyJpIjoiQ2hJSnE2b2FPRWNWcmpzUmFBcFNGT2V5WF9NIiwicCI6MSwidiI6MSwidCI6WzEsMl19",
+          "address": "Indian Music Experience Museum, Brigade Millenium Road, JP Nagar 7th Phase, J. P. Nagar, Bengaluru, Karnataka, India",
+          "types": [
+            "POINT_OF_INTEREST",
+            "PRECISE_ADDRESS"
+          ],
+          "user_history": false,
+          "precise": true,
+          "main_text": "Indian Music Experience Museum",
+          "secondary_text": "Brigade Millenium Road, JP Nagar 7th Phase, J. P. Nagar, Bengaluru, Karnataka, India"
+        },
+        {
+          "id": "eyJpIjoiQ2hJSjY5ZGVWSVlVcmpzUlc1UjB5RlpTS0lFIiwicCI6MSwidiI6MSwidCI6WzIsM119",
+          "address": "Indian Oil Petrol bunk, Agara Village, 1st Sector, HSR Layout, Bengaluru, Karnataka, India",
+          "types": [
+            "POSTAL_ADDRESS",
+            "POINT_OF_INTEREST"
+          ],
+          "user_history": false,
+          "precise": true,
+          "main_text": "Indian Oil Petrol bunk",
+          "secondary_text": "Agara Village, 1st Sector, HSR Layout, Bengaluru, Karnataka, India"
+        }
+      ]
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": true,
+    "requiresAuth": false,
+    "targetHost": "edge.blablacar.in"
+  }
+}

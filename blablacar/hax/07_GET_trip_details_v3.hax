@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.346Z",
+  "endpointId": "07_GET_trip_details_v3",
+  "name": "Trip Itinerary & Driver Metadata",
+  "category": "Rides & Details",
+  "description": "Delivers full multimodal itinerary legs, exact pickup and drop-off coordinates, co2 emissions saved, car amenities, and passenger reviews.",
+  "request": {
+    "method": "GET",
+    "url": "https://edge.blablacar.in/trip/details/v3?id=KpmVENEvSDaFUCjblX39yweGeSgw9MT4-spC6nJx-L6A&requested_seats=1",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "accept",
+        "value": "application/json"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-IN,en;q=0.9"
+      },
+      {
+        "name": "x-locale",
+        "value": "en_IN"
+      },
+      {
+        "name": "x-currency",
+        "value": "INR"
+      },
+      {
+        "name": "x-client-platform",
+        "value": "WEB"
+      }
+    ],
+    "queryString": [],
+    "postData": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "content-type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "name": "x-powered-by",
+        "value": "BlaBlaCar Edge"
+      }
+    ],
+    "content": {
+      "size": 1024,
+      "mimeType": "application/json",
+      "body": {
+        "status": "success",
+        "category": "Rides & Details",
+        "description": "Delivers full multimodal itinerary legs, exact pickup and drop-off coordinates, co2 emissions saved, car amenities, and passenger reviews."
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": true,
+    "requiresAuth": false,
+    "targetHost": "edge.blablacar.in"
+  }
+}

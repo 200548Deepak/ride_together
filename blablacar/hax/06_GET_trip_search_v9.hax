@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.341Z",
+  "endpointId": "06_GET_trip_search_v9",
+  "name": "Carpool Trip Search Engine",
+  "category": "Search & Discovery",
+  "description": "Returns matching carpool trips for a given date, origin, and destination with pricing, driver badges, vehicle models, and stopover times.",
+  "request": {
+    "method": "GET",
+    "url": "https://edge.blablacar.in/trip/search/v9?departure_date=2026-11-09&from_place_id=ChIJbU60yXAWkrjsR4E9-UejD3_g&to_place_id=ChIJ-S5XHTHwrzsRbTn4wOjsiSs&requested_seats=1",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "accept",
+        "value": "application/json"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-IN,en;q=0.9"
+      },
+      {
+        "name": "x-locale",
+        "value": "en_IN"
+      },
+      {
+        "name": "x-currency",
+        "value": "INR"
+      },
+      {
+        "name": "x-client-platform",
+        "value": "WEB"
+      }
+    ],
+    "queryString": [],
+    "postData": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "content-type",
+        "value": "application/json; charset=utf-8"
+      },
+      {
+        "name": "x-powered-by",
+        "value": "BlaBlaCar Edge"
+      }
+    ],
+    "content": {
+      "size": 1024,
+      "mimeType": "application/json",
+      "body": {
+        "status": "success",
+        "category": "Search & Discovery",
+        "description": "Returns matching carpool trips for a given date, origin, and destination with pricing, driver badges, vehicle models, and stopover times."
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": true,
+    "requiresAuth": false,
+    "targetHost": "edge.blablacar.in"
+  }
+}

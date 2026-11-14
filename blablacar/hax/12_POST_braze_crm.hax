@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.389Z",
+  "endpointId": "12_POST_braze_crm",
+  "name": "Braze CRM & In-App Messaging",
+  "category": "CRM & Engagement",
+  "description": "Synchronizes user engagement events, push notification tokens, and contextual marketing dialog triggers.",
+  "request": {
+    "method": "POST",
+    "url": "https://customer.fra-01.braze.eu/api/v3/data/",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "Referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "X-Braze-TriggersRequest",
+        "value": "true"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "X-Braze-Last-Req-Ms-Ago",
+        "value": "12169"
+      },
+      {
+        "name": "X-Braze-DataRequest",
+        "value": "true"
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "X-Braze-Req-Attempt",
+        "value": "28"
+      },
+      {
+        "name": "X-Braze-Req-Tokens-Remaining",
+        "value": "21"
+      },
+      {
+        "name": "X-Requested-With",
+        "value": "XMLHttpRequest"
+      },
+      {
+        "name": "User-Agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "Content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "X-Braze-Api-Key",
+        "value": "b487f83e-4734-4356-83e4-3b4eb1d95f61"
+      }
+    ],
+    "queryString": [],
+    "postData": {
+      "mimeType": "application/json",
+      "text": "{\"respond_with\":{\"triggers\":true,\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\",\"config\":{\"config_time\":0}},\"events\":[{\"name\":\"ss\",\"time\":1794235280.729,\"data\":{},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794235296.665,\"data\":{\"n\":\"Ride Details\",\"p\":{\"RideOwnerRating\":\"5\",\"IsDriverIdentityVerified\":true,\"RideSource\":\"CARPOOLING\",\"RideDate\":\"2026-11-10\",\"DepartureLocation\":\"822, 24th Main Rd, KR Layout, 2nd Phase, J. P. Nagar, Karnataka\",\"RideOwnerName\":\"ANISH\",\"DepartureCity\":\"Bengaluru\",\"NumberOfChanges\":0,\"RideOwnerPictureURL\":\"https://cdn.blablacar.com/user-profile-picture/le1WcLGZezEmeBJxkTi4s7/thumbnail_144x144.jpeg\",\"ArrivalCity\":\"Hutagalli\",\"TimeOfArrival\":\"07:40\",\"Price\":\"₹500.00\",\"IsSuperDriver\":false,\"RideId\":\"KpmVENEvSDaFUCjblX39yweGeSgw9MT4-spC6nJx-L6A\",\"ArrivalLocation\":\"Hootagalli Industrial Area, 1-C, Koorgalli, Hootagalli, Karnataka\",\"TimeOfDeparture\":\"05:30\"}},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794236211.044,\"data\":{\"n\":\"Ride Details continue\",\"p\":{\"RideDate\":\"2026-11-10\",\"ArrivalCity\":\"Hutagalli\",\"DepartureLocation\":\"822, 24th Main Rd, KR Layout, 2nd Phase, J. P. Nagar, Karnataka\",\"RideOwnerName\":\"ANISH\",\"RideId\":\"KpmVENEvSDaFUCjblX39yweGeSgw9MT4-spC6nJx-L6A\",\"DepartureCity\":\"Bengaluru\",\"NumberOfChanges\":0,\"ArrivalLocation\":\"Hootagalli Industrial Area, 1-C, Koorgalli, Hootagalli, Karnataka\",\"Price\":\"₹500.00\"}},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794236250.22,\"data\":{\"n\":\"Checkout\",\"p\":{\"DepartureLocation\":\"822, 24th Main Rd, KR Layout, 2nd Phase, J. P. Nagar, Bengaluru, Karnataka\",\"DepartureCity\":\"Bengaluru\",\"ArrivalLocation\":\"Excel Public School\",\"ArrivalCity\":\"Ilavala Hobli\",\"StopoverCities\":\"\",\"RideSource\":\"CARPOOLING\",\"RideDate\":\"2026-11-10\",\"NumberOfSeats\":1,\"TimeOfDeparture\":\"05:30\",\"TimeOfArrival\":\"07:40\",\"DriverIdCheck\":false,\"Price\":\"₹500.00\",\"RideId\":\"KpmVENEvSDaFUCjblX39yweGeSgw9MT4-spC6nJx-L6A\"}},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794236259.612,\"data\":{\"n\":\"Checkout\",\"p\":{\"DepartureLocation\":\"822, 24th Main Rd, KR Layout, 2nd Phase, J. P. Nagar, Bengaluru, Karnataka\",\"DepartureCity\":\"Bengaluru\",\"ArrivalLocation\":\"Excel Public School\",\"ArrivalCity\":\"Ilavala Hobli\",\"StopoverCities\":\"\",\"RideSource\":\"CARPOOLING\",\"RideDate\":\"2026-11-10\",\"NumberOfSeats\":1,\"TimeOfDeparture\":\"05:30\",\"TimeOfArrival\":\"07:40\",\"DriverIdCheck\":false,\"Price\":\"₹500.00\",\"RideId\":\"KpmVENEvSDaFUCjblX39yweGeSgw9MT4-spC6nJx-L6A\"}},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"se\",\"time\":1794236259.611,\"data\":{\"d\":978.881},\"session_id\":\"12b00bee-9076-4fef-8cc6-e9e91ca5672a\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ss\",\"time\":1794321455.357,\"data\":{},\"session_id\":\"b5ad5df1-c183-42f5-b111-f9199c38fe14\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794321459.956,\"data\":{\"n\":\"Publication Departure\",\"p\":{\"DepartureCity\":\"Bengaluru\"}},\"session_id\":\"b5ad5df1-c183-42f5-b111-f9199c38fe14\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794321463.586,\"data\":{\"n\":\"Publication Arrival\",\"p\":{\"ArrivalCity\":\"Bengaluru\"}},\"session_id\":\"b5ad5df1-c183-42f5-b111-f9199c38fe14\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794321506.77,\"data\":{\"n\":\"Publication Arrival\",\"p\":{\"ArrivalCity\":\"Bengaluru\"}},\"session_id\":\"b5ad5df1-c183-42f5-b111-f9199c38fe14\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"},{\"name\":\"ce\",\"time\":1794321507.581,\"data\":{\"n\":\"Publication Indicate Your Route\",\"p\":{\"DistanceInKm\":8}},\"session_id\":\"b5ad5df1-c183-42f5-b111-f9199c38fe14\",\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\"}],\"attributes\":[{\"user_id\":\"1-90309f41bafb9789c4a86ff597ad5606917f3fd365158b2607bc3ae01b94b749ae568df398fa366eec95a7a1e67da03cedbf4cec\",\"language\":\"en\"}],\"device\":{\"browser\":\"Unknown Browser\",\"browser_version\":\"Unknown Version\",\"os_version\":\"Windows\",\"locale\":\"en-us\",\"time_zone\":\"Asia/Calcutta\",\"user_agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36\"},\"api_key\":\"b487f83e-4734-4356-83e4-3b4eb1d95f61\",\"time\":1794321565,\"sdk_metadata\":[\"npm\"],\"sdk_version\":\"7.1.0\",\"device_id\":\"d75834fe-611c-4aaf-b6c8-daf4bcb0d7f0\"}"
+    }
+  },
+  "response": {
+    "status": 0,
+    "statusText": "",
+    "httpVersion": "HTTP/2.0",
+    "headers": [],
+    "content": {
+      "size": 0,
+      "mimeType": "x-unknown",
+      "body": null
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": false,
+    "requiresAuth": false,
+    "targetHost": "customer.fra-01.braze.eu"
+  }
+}

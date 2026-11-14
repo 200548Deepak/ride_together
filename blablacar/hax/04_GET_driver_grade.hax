@@ -1,0 +1,241 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.330Z",
+  "endpointId": "04_GET_driver_grade",
+  "name": "Driver Grade & Reputation Profile",
+  "category": "Driver & Trust",
+  "description": "Retrieves driver experience tier (Ambassador, Expert, Intermediate), verification statuses, total rides completed, and rating.",
+  "request": {
+    "method": "GET",
+    "url": "https://edge.blablacar.in/experience/driver-grade",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": ":authority",
+        "value": "edge.blablacar.in"
+      },
+      {
+        "name": ":method",
+        "value": "GET"
+      },
+      {
+        "name": ":path",
+        "value": "/experience/driver-grade"
+      },
+      {
+        "name": ":scheme",
+        "value": "https"
+      },
+      {
+        "name": "accept",
+        "value": "*/*"
+      },
+      {
+        "name": "accept-encoding",
+        "value": "gzip, deflate, br, zstd"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-IN"
+      },
+      {
+        "name": "origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "priority",
+        "value": "u=1, i"
+      },
+      {
+        "name": "referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "sec-fetch-dest",
+        "value": "empty"
+      },
+      {
+        "name": "sec-fetch-mode",
+        "value": "cors"
+      },
+      {
+        "name": "sec-fetch-site",
+        "value": "same-site"
+      },
+      {
+        "name": "sec-gpc",
+        "value": "1"
+      },
+      {
+        "name": "user-agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-endpoint",
+        "value": "GET /experience/driver-grade"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-type",
+        "value": "typescript"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-version",
+        "value": "4.2153.0"
+      },
+      {
+        "name": "x-client",
+        "value": "SPA|1.0.0"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "ceda8fd7-60f1-4e7d-b22f-74f72c1889ad"
+      },
+      {
+        "name": "x-currency",
+        "value": "INR"
+      },
+      {
+        "name": "x-locale",
+        "value": "en_IN"
+      },
+      {
+        "name": "x-viewport-height",
+        "value": "730"
+      },
+      {
+        "name": "x-viewport-width",
+        "value": "1280"
+      },
+      {
+        "name": "x-visitor-id",
+        "value": "fc4ab4e2-e0a6-463c-a8cd-0005aa6dd3ae"
+      }
+    ],
+    "queryString": [],
+    "postData": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "accept-ch",
+        "value": "Sec-CH-UA,Sec-CH-UA-Mobile,Sec-CH-UA-Platform,Sec-CH-UA-Arch,Sec-CH-UA-Full-Version-List,Sec-CH-UA-Model,Sec-CH-Device-Memory,Sec-CH-UA-Platform-Version"
+      },
+      {
+        "name": "access-control-allow-credentials",
+        "value": "true"
+      },
+      {
+        "name": "access-control-allow-origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "access-control-expose-headers",
+        "value": "Origin,Accept,Accept-Charset,Accept-Encoding,Accept-Language,Cache-Control,Content-Type,User-Agent,Authorization,Link,X-Correlation-Id,X-Forwarded-For,X-Visitor-Id,X-Locale,X-Currency,X-Total-Count,X-Page-Count,X-Current-Page,X-Real-IP,X-Forwarded-Proto,X-Forwarded-For,X-Trip-Search-Sorting-Algorithm,X-Client,X-Client-For,X-Blablacar-Accept-Endpoint-Version,X-Blablacar-Enable-Debug-Logs,X-Blablacar-Disable-Legacy-Error-Format,X-Blablacar-Maquette,X-Blablacar-GooglePlaces-Session-Token,X-DataDome-captchapassed,x-dd-b,BBC-Nethone-Attempt,bbc-debug-translations"
+      },
+      {
+        "name": "alt-svc",
+        "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+      },
+      {
+        "name": "cache-control",
+        "value": "no-cache"
+      },
+      {
+        "name": "content-length",
+        "value": "18"
+      },
+      {
+        "name": "content-security-policy",
+        "value": "frame-ancestors none"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "date",
+        "value": "Tue, 10 Nov 2026 14:39:25 GMT"
+      },
+      {
+        "name": "permissions-policy",
+        "value": "geolocation=(), microphone=(), camera=()"
+      },
+      {
+        "name": "referrer-policy",
+        "value": "no-referrer"
+      },
+      {
+        "name": "server",
+        "value": "istio-envoy"
+      },
+      {
+        "name": "strict-transport-security",
+        "value": "max-age=31536000; includeSubDomains; preload"
+      },
+      {
+        "name": "via",
+        "value": "1.1 google"
+      },
+      {
+        "name": "x-content-type-options",
+        "value": "nosniff"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "ceda8fd7-60f1-4e7d-b22f-74f72c1889ad"
+      },
+      {
+        "name": "x-datadome",
+        "value": "protected"
+      },
+      {
+        "name": "x-dns-prefetch-control",
+        "value": "off"
+      },
+      {
+        "name": "x-download-options",
+        "value": "noopen"
+      },
+      {
+        "name": "x-envoy-upstream-service-time",
+        "value": "20"
+      },
+      {
+        "name": "x-frame-options",
+        "value": "deny"
+      },
+      {
+        "name": "x-xss-protection",
+        "value": "1; mode=block"
+      }
+    ],
+    "content": {
+      "size": 18,
+      "mimeType": "application/json",
+      "body": {
+        "grade": "NEWBIE"
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": true,
+    "requiresAuth": false,
+    "targetHost": "edge.blablacar.in"
+  }
+}

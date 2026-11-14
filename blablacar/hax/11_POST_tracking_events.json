@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.386Z",
+  "endpointId": "11_POST_tracking_events",
+  "name": "BlaBlaCar Behavioral Event Tracker",
+  "category": "Analytics & Tracking",
+  "description": "Dispatches clickstream events, search funnels, publication milestones, and conversion funnel analytics.",
+  "request": {
+    "method": "POST",
+    "url": "https://t.blablacar.com/v2/c",
+    "httpVersion": "HTTP/2.0",
+    "headers": [
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-endpoint",
+        "value": "POST /v2/c"
+      },
+      {
+        "name": "Referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-type",
+        "value": "typescript"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-version",
+        "value": "4.589.0"
+      },
+      {
+        "name": "User-Agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "queryString": [],
+    "postData": {
+      "mimeType": "application/json",
+      "text": "{\"jsonrpc\":\"2.0\",\"method\":\"push\",\"params\":{\"user_agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 tklib/1.0.0 bbc-spa/1.0.0\",\"session_stamp\":1794231001436,\"device_id\":\"w_343a2be1-6144-41c3-a34f-f39f8ba00691\",\"screen_size\":680,\"os_version\":\"NT 10.0\",\"os_name\":\"Windows\",\"platform_name\":\"bbc-spa\",\"device_brand\":\"UNKNOWN\",\"device_model\":\"UNKNOWN\",\"loc\":\"en_IN\",\"visitor_id\":\"fc4ab4e2-e0a6-463c-a8cd-0005aa6dd3ae\",\"sent_at_client_local\":\"2026-11-09T19:31:40+05:30\",\"retry\":0,\"viewport\":{\"width\":680,\"height\":735},\"events\":[{\"name\":\"page_stream\",\"version\":4,\"created_at_client_local\":\"2026-11-09T19:31:35+05:30\",\"payload\":{\"page\":\"search_results\",\"page_category\":\"searchResults\",\"url\":\"https://www.blablacar.in/search?fn=Bengaluru%2C+Karnataka%2C+India&tn=Mysore%2C+Karnataka%2C+India&db=2026-11-09&seats=1&search_origin=HOME&transport_type=CARPOOLING&from_place_id=eyJpIjoiQ2hJSmJVNjB5WEFXcmpzUjRFOS1VZWpEM19nIiwicCI6MSwidiI6MSwidCI6WzRdfQ%3D%3D&to_place_id=eyJpIjoiQ2hJSi1TNVhIVGh3cnpzUmJUbjR3T2pzaVNzIiwicCI6MSwidiI6MSwidCI6WzRdfQ%3D%3D\",\"referrer\":\"\"}}]}}"
+    }
+  },
+  "response": {
+    "status": 0,
+    "statusText": "",
+    "httpVersion": "HTTP/2.0",
+    "headers": [],
+    "content": {
+      "size": 0,
+      "mimeType": "x-unknown",
+      "body": null
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": false,
+    "requiresAuth": false,
+    "targetHost": "t.blablacar.com"
+  }
+}

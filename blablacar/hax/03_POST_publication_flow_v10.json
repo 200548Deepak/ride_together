@@ -1,0 +1,306 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.319Z",
+  "endpointId": "03_POST_publication_flow_v10",
+  "name": "Ride Publication Flow State Machine",
+  "category": "Driver & Ride Publishing",
+  "description": "Drives the multi-step ride offer creation wizard (START, DEPARTURE, ARRIVAL, STOPOVERS, DATE_TIME, CAPACITY, PRICE, VEHICLE, CONFIRMATION).",
+  "request": {
+    "method": "POST",
+    "url": "https://edge.blablacar.in/experience/publication-flow/v10",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": ":authority",
+        "value": "edge.blablacar.in"
+      },
+      {
+        "name": ":method",
+        "value": "POST"
+      },
+      {
+        "name": ":path",
+        "value": "/experience/publication-flow/v10"
+      },
+      {
+        "name": ":scheme",
+        "value": "https"
+      },
+      {
+        "name": "accept",
+        "value": "*/*"
+      },
+      {
+        "name": "accept-encoding",
+        "value": "gzip, deflate, br, zstd"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-IN"
+      },
+      {
+        "name": "content-length",
+        "value": "108"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "priority",
+        "value": "u=1, i"
+      },
+      {
+        "name": "referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "sec-fetch-dest",
+        "value": "empty"
+      },
+      {
+        "name": "sec-fetch-mode",
+        "value": "cors"
+      },
+      {
+        "name": "sec-fetch-site",
+        "value": "same-site"
+      },
+      {
+        "name": "sec-gpc",
+        "value": "1"
+      },
+      {
+        "name": "user-agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-endpoint",
+        "value": "POST /experience/publication-flow/v10"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-type",
+        "value": "typescript"
+      },
+      {
+        "name": "x-blablacar-openapi-codegen-version",
+        "value": "4.1825.0"
+      },
+      {
+        "name": "x-client",
+        "value": "SPA|1.0.0"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "86f03faf-b4ff-4077-90a0-486f0adf6cb0"
+      },
+      {
+        "name": "x-currency",
+        "value": "INR"
+      },
+      {
+        "name": "x-locale",
+        "value": "en_IN"
+      },
+      {
+        "name": "x-viewport-height",
+        "value": "730"
+      },
+      {
+        "name": "x-viewport-width",
+        "value": "1280"
+      },
+      {
+        "name": "x-visitor-id",
+        "value": "fc4ab4e2-e0a6-463c-a8cd-0005aa6dd3ae"
+      }
+    ],
+    "queryString": [],
+    "postData": {
+      "mimeType": "application/json",
+      "text": "{\"step\":\"START\",\"publication\":{},\"flow_type\":\"PUBLICATION\",\"flow_id\":\"07969358-78f4-4a15-8e4b-731310909c1f\"}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "statusText": "",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "accept-ch",
+        "value": "Sec-CH-UA,Sec-CH-UA-Mobile,Sec-CH-UA-Platform,Sec-CH-UA-Arch,Sec-CH-UA-Full-Version-List,Sec-CH-UA-Model,Sec-CH-Device-Memory,Sec-CH-UA-Platform-Version"
+      },
+      {
+        "name": "access-control-allow-credentials",
+        "value": "true"
+      },
+      {
+        "name": "access-control-allow-origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "access-control-expose-headers",
+        "value": "Origin,Accept,Accept-Charset,Accept-Encoding,Accept-Language,Cache-Control,Content-Type,User-Agent,Authorization,Link,X-Correlation-Id,X-Forwarded-For,X-Visitor-Id,X-Locale,X-Currency,X-Total-Count,X-Page-Count,X-Current-Page,X-Real-IP,X-Forwarded-Proto,X-Forwarded-For,X-Trip-Search-Sorting-Algorithm,X-Client,X-Client-For,X-Blablacar-Accept-Endpoint-Version,X-Blablacar-Enable-Debug-Logs,X-Blablacar-Disable-Legacy-Error-Format,X-Blablacar-Maquette,X-Blablacar-GooglePlaces-Session-Token,X-DataDome-captchapassed,x-dd-b,BBC-Nethone-Attempt,bbc-debug-translations"
+      },
+      {
+        "name": "alt-svc",
+        "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+      },
+      {
+        "name": "cache-control",
+        "value": "no-cache"
+      },
+      {
+        "name": "content-length",
+        "value": "1481"
+      },
+      {
+        "name": "content-security-policy",
+        "value": "frame-ancestors none"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "date",
+        "value": "Tue, 10 Nov 2026 14:39:24 GMT"
+      },
+      {
+        "name": "permissions-policy",
+        "value": "geolocation=(), microphone=(), camera=()"
+      },
+      {
+        "name": "referrer-policy",
+        "value": "no-referrer"
+      },
+      {
+        "name": "server",
+        "value": "istio-envoy"
+      },
+      {
+        "name": "strict-transport-security",
+        "value": "max-age=31536000; includeSubDomains; preload"
+      },
+      {
+        "name": "via",
+        "value": "1.1 google"
+      },
+      {
+        "name": "x-content-type-options",
+        "value": "nosniff"
+      },
+      {
+        "name": "x-correlation-id",
+        "value": "86f03faf-b4ff-4077-90a0-486f0adf6cb0"
+      },
+      {
+        "name": "x-datadome",
+        "value": "protected"
+      },
+      {
+        "name": "x-dns-prefetch-control",
+        "value": "off"
+      },
+      {
+        "name": "x-download-options",
+        "value": "noopen"
+      },
+      {
+        "name": "x-envoy-upstream-service-time",
+        "value": "53"
+      },
+      {
+        "name": "x-frame-options",
+        "value": "deny"
+      },
+      {
+        "name": "x-xss-protection",
+        "value": "1; mode=block"
+      }
+    ],
+    "content": {
+      "size": 1481,
+      "mimeType": "application/json",
+      "body": {
+        "steps": [
+          {
+            "name": "DEPARTURE",
+            "context": {
+              "departure": {
+                "should_show_esc_recap": false,
+                "waypoint_context": {
+                  "screen_title": "Pick-up",
+                  "title": "Pick-up",
+                  "suggestions_history": [
+                    {
+                      "id": "eyJpIjoiQ2hJSnNjMXJIemNqcmpzUkpManlRMzFMcHFVIiwicCI6MSwidiI6MSwidCI6WzEsMiwzXX0=",
+                      "main_text": "27, 6th Cross Rd",
+                      "secondary_text": "27, 6th Cross Rd, Visveshwaraiah Layout, Vigneshwara Layout, Bagalagunte, Bengaluru, Karnataka",
+                      "address": "27, 6th Cross Rd, 27, 6th Cross Rd, Visveshwaraiah Layout, Vigneshwara Layout, Bagalagunte, Bengaluru, Karnataka",
+                      "user_history": true
+                    },
+                    {
+                      "id": "eyJpIjoiQ2hJSjVTSmhzNHdrcmpzUjhYRktKMXRxRVZnIiwicCI6MSwidiI6MSwidCI6WzJdfQ==",
+                      "main_text": "KSCA Stadium",
+                      "secondary_text": "3CQX+22R, Alur, Bengaluru, Karnataka",
+                      "address": "KSCA Stadium, 3CQX+22R, Alur, Bengaluru, Karnataka",
+                      "user_history": true
+                    },
+                    {
+                      "id": "eyJpIjoiQ2hJSmJVNjB5WEFXcmpzUjRFOS1VZWpEM19nIiwicCI6MSwidiI6MSwidCI6WzRdfQ==",
+                      "main_text": "Bengaluru, Karnataka",
+                      "secondary_text": "India",
+                      "address": "Bengaluru, Karnataka, India",
+                      "user_history": true
+                    },
+                    {
+                      "id": "eyJpIjoiQ2hJSi1TNVhIVGh3cnpzUmJUbjR3T2pzaVNzIiwicCI6MSwidiI6MSwidCI6WzRdfQ==",
+                      "main_text": "Mysuru, Karnataka",
+                      "secondary_text": "India",
+                      "address": "Mysuru, Karnataka, India",
+                      "user_history": true
+                    }
+                  ],
+                  "auto_complete_place_holder": "Enter the full address"
+                }
+              }
+            }
+          }
+        ],
+        "publication": {
+          "stopovers": [],
+          "desired_stopovers": [],
+          "departure_dates": [],
+          "sub_trips_prices": [],
+          "publish_return": false,
+          "insurance": false
+        },
+        "flow_id": "07969358-78f4-4a15-8e4b-731310909c1f",
+        "flow_type": "PUBLICATION"
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": true,
+    "requiresAuth": false,
+    "targetHost": "edge.blablacar.in"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "1.2.0",
+  "haxSpecification": "HTTP Archive eXchange (HAX) Format",
+  "capturedAt": "2026-11-14T07:02:44.378Z",
+  "endpointId": "10_POST_telemetry_metrics",
+  "name": "Production Telemetry & Performance RUM",
+  "category": "Monitoring & Telemetry",
+  "description": "Reports client-side performance metrics, Web Vitals (LCP, FID, CLS), client memory usage, and edge network latencies.",
+  "request": {
+    "method": "POST",
+    "url": "https://telemetry.prod.blabla.tech/v1/metrics",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": ":authority",
+        "value": "telemetry.prod.blabla.tech"
+      },
+      {
+        "name": ":method",
+        "value": "POST"
+      },
+      {
+        "name": ":path",
+        "value": "/v1/metrics"
+      },
+      {
+        "name": ":scheme",
+        "value": "https"
+      },
+      {
+        "name": "accept",
+        "value": "*/*"
+      },
+      {
+        "name": "accept-encoding",
+        "value": "gzip, deflate, br, zstd"
+      },
+      {
+        "name": "accept-language",
+        "value": "en-US,en;q=0.8"
+      },
+      {
+        "name": "content-length",
+        "value": "8594"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "priority",
+        "value": "u=1, i"
+      },
+      {
+        "name": "referer",
+        "value": "https://www.blablacar.in/"
+      },
+      {
+        "name": "sec-ch-ua",
+        "value": "\"Not-A.Brand\";v=\"99\", \"Brave\";v=\"157\", \"Chromium\";v=\"157\""
+      },
+      {
+        "name": "sec-ch-ua-mobile",
+        "value": "?0"
+      },
+      {
+        "name": "sec-ch-ua-platform",
+        "value": "\"Windows\""
+      },
+      {
+        "name": "sec-fetch-dest",
+        "value": "empty"
+      },
+      {
+        "name": "sec-fetch-mode",
+        "value": "cors"
+      },
+      {
+        "name": "sec-fetch-site",
+        "value": "cross-site"
+      },
+      {
+        "name": "sec-gpc",
+        "value": "1"
+      },
+      {
+        "name": "user-agent",
+        "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36"
+      },
+      {
+        "name": "x-internal-token",
+        "value": "621cf7f0-dc78-48e4-a008-760d77f59b00"
+      }
+    ],
+    "queryString": [],
+    "postData": {
+      "mimeType": "application/json",
+      "text": "{\"resourceMetrics\":[{\"resource\":{\"attributes\":[{\"key\":\"service.name\",\"value\":{\"stringValue\":\"kairos\"}},{\"key\":\"team\",\"value\":{\"stringValue\":\"spa\"}},{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}}],\"droppedAttributesCount\":0},\"scopeMetrics\":[{\"scope\":{\"name\":\"counter\",\"version\":\"\"},\"metrics\":[{\"name\":\"spa.page_loaded\",\"description\":\"Counts the number of times a page has been loaded\",\"unit\":\"pages\",\"sum\":{\"aggregationTemporality\":1,\"isMonotonic\":true,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\",\"asDouble\":1}]}}]},{\"scope\":{\"name\":\"explicit-histogram\",\"version\":\"\"},\"metrics\":[{\"name\":\"spa.web_vitals.ttfb\",\"description\":\"Time to First Byte web vital metric\",\"unit\":\"milliseconds\",\"histogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}},{\"key\":\"rating\",\"value\":{\"stringValue\":\"good\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}}],\"bucketCounts\":[0,0,0,0,1,0,0,0,0,0,0,0],\"explicitBounds\":[100,200,400,600,800,1000,1400,1800,2500,4000,10000],\"count\":1,\"sum\":616.9000000953674,\"min\":616.9000000953674,\"max\":616.9000000953674,\"startTimeUnixNano\":\"1794232895531000000\",\"timeUnixNano\":\"1794232895893000000\"}]}}]},{\"scope\":{\"name\":\"exponential-histogram\",\"version\":\"\"},\"metrics\":[{\"name\":\"spa.resources.js.transferSize\",\"description\":\"JS resources transfer size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.js.count\",\"description\":\"JS resources count\",\"unit\":\"resources\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":52,\"max\":52,\"sum\":52,\"positive\":{\"offset\":5977344,\"bucketCounts\":[1]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":20,\"zeroCount\":0,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.js.decodedBodySize\",\"description\":\"JS resources decoded body size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":4870978,\"max\":4870978,\"sum\":4870978,\"positive\":{\"offset\":23294933,\"bucketCounts\":[1]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":20,\"zeroCount\":0,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.css.transferSize\",\"description\":\"CSS resources transfer size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.css.count\",\"description\":\"CSS resources count\",\"unit\":\"resources\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":5,\"max\":5,\"sum\":5,\"positive\":{\"offset\":2434718,\"bucketCounts\":[1]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":20,\"zeroCount\":0,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.css.decodedBodySize\",\"description\":\"CSS resources decoded body size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":679041,\"max\":679041,\"sum\":679041,\"positive\":{\"offset\":20314208,\"bucketCounts\":[1]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":20,\"zeroCount\":0,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.img.transferSize\",\"description\":\"IMG resources transfer size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.img.count\",\"description\":\"IMG resources count\",\"unit\":\"resources\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.img.decodedBodySize\",\"description\":\"IMG resources decoded body size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.thirdparty.transferSize\",\"description\":\"Third Party resources transfer size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.thirdparty.count\",\"description\":\"Third Party resources count\",\"unit\":\"resources\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":1,\"max\":1,\"sum\":1,\"positive\":{\"offset\":-1,\"bucketCounts\":[1]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":20,\"zeroCount\":0,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}},{\"name\":\"spa.resources.thirdparty.decodedBodySize\",\"description\":\"Third Party resources decoded body size\",\"unit\":\"bytes\",\"exponentialHistogram\":{\"aggregationTemporality\":1,\"dataPoints\":[{\"attributes\":[{\"key\":\"source\",\"value\":{\"stringValue\":\"browser\"}},{\"key\":\"domain\",\"value\":{\"stringValue\":\"www.blablacar.in\"}},{\"key\":\"page.name\",\"value\":{\"stringValue\":\"search_results\"}}],\"count\":1,\"min\":0,\"max\":0,\"sum\":0,\"positive\":{\"offset\":0,\"bucketCounts\":[]},\"negative\":{\"offset\":0,\"bucketCounts\":[]},\"scale\":0,\"zeroCount\":1,\"startTimeUnixNano\":\"1794232894989000000\",\"timeUnixNano\":\"1794232895893000000\"}]}}]}]}]}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "statusText": "",
+    "httpVersion": "h3",
+    "headers": [
+      {
+        "name": "access-control-allow-credentials",
+        "value": "true"
+      },
+      {
+        "name": "access-control-allow-origin",
+        "value": "https://www.blablacar.in"
+      },
+      {
+        "name": "alt-svc",
+        "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+      },
+      {
+        "name": "content-length",
+        "value": "21"
+      },
+      {
+        "name": "content-type",
+        "value": "application/json"
+      },
+      {
+        "name": "date",
+        "value": "Mon, 09 Nov 2026 14:01:36 GMT"
+      },
+      {
+        "name": "server",
+        "value": "istio-envoy"
+      },
+      {
+        "name": "vary",
+        "value": "Origin"
+      },
+      {
+        "name": "via",
+        "value": "1.1 google"
+      },
+      {
+        "name": "x-envoy-upstream-service-time",
+        "value": "1"
+      }
+    ],
+    "content": {
+      "size": 21,
+      "mimeType": "application/json",
+      "body": {
+        "partialSuccess": {}
+      }
+    }
+  },
+  "annotations": {
+    "isEdgeGateway": false,
+    "requiresAuth": true,
+    "targetHost": "telemetry.prod.blabla.tech"
+  }
+}
